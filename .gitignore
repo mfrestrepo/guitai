@@ -4,3 +4,6 @@ coverage/
 *.local
 .DS_Store
 *.tsbuildinfo
+
+# Claves SSH locales de despliegue (nunca subir)
+.deploy/
