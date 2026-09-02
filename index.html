@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎸</text></svg>"
+    />
+    <title>GuitAI — Guitar Tuner</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">🎸</span>
+          <h1>GuitAI</h1>
+          <span class="brand-sub">Tuner</span>
+        </div>
+        <div class="topbar-controls">
+          <label class="field">
+            <span class="field-label">Tuning</span>
+            <select id="tuning-select" title="Tuning preset"></select>
+          </label>
+          <button id="mic-button" class="btn btn-primary" type="button">Start microphone</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="card tuner-card">
+          <div id="strings-row" class="strings-row" role="group" aria-label="Guitar strings"></div>
+
+          <div class="note-block">
+            <div id="note-name" class="note-name" data-state="idle">&mdash;</div>
+            <div class="freq-line">
+              <span id="detected-freq" class="mono">--.-</span><span class="unit">Hz detected</span>
+              <span class="sep">&middot;</span>
+              <span>target</span>
+              <span id="target-freq" class="mono">--.-</span><span class="unit">Hz</span>
+            </div>
+          </div>
+
+          <div class="meter-wrap">
+            <div id="meter" class="meter">
+              <div class="meter-tick" style="left: 0%"></div>
+              <div class="meter-tick tick-minor" style="left: 15%"></div>
+              <div class="meter-tick tick-minor" style="left: 35%"></div>
+              <div class="meter-tick tick-center" style="left: 50%"></div>
+              <div class="meter-tick tick-minor" style="left: 65%"></div>
+              <div class="meter-tick tick-minor" style="left: 85%"></div>
+              <div class="meter-tick" style="left: 100%"></div>
+              <div id="needle" class="needle"></div>
+            </div>
+            <div class="meter-labels">
+              <span class="side-label flat">&#9837; flat</span>
+              <span id="cents-readout" class="cents mono">&plusmn;0 &cent;</span>
+              <span class="side-label sharp">sharp &#9839;</span>
+            </div>
+          </div>
+
+          <div id="verdict" class="verdict" data-state="idle">Play a single string&hellip;</div>
+        </section>
+
+        <section class="card status-card">
+          <h2>Status</h2>
+          <p id="status-text" class="status-text">Waiting to start.</p>
+          <div class="level-row">
+            <span class="field-label">Signal</span>
+            <div class="level-track"><div id="level-fill" class="level-fill"></div></div>
+          </div>
+          <ol class="hints">
+            <li>Click <strong>Start microphone</strong> and allow access.</li>
+            <li>Pluck <strong>one string at a time</strong> and let it ring.</li>
+            <li>Turn the peg until the needle centers and the note turns green.</li>
+            <li>Tip: click a string above to lock it as the target.</li>
+          </ol>
+        </section>
+      </main>
+
+      <footer>GuitAI &middot; module 1 &mdash; real-time tuner &middot; Web Audio API</footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
