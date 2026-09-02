@@ -1,8 +1,30 @@
 # 🎸 GuitAI
 
-**GuitAI** is a personal, AI-assisted guitar study companion. It is being built
-module by module; the first module — a **real-time chromatic guitar tuner** —
-is implemented and working in this repository.
+[![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Tests](https://img.shields.io/badge/tests-66%20passing-34D399)](#testing)
+[![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
+
+**GuitAI — AI-assisted guitar practice companion.**
+
+Module 1 (this repo): a **real-time chromatic tuner** that runs in your browser,
+listens through the microphone and tells you — in cents — how far each string is
+from pitch, with a big, calm needle gauge instead of a wall of numbers.
+
+✨ **Highlights**
+
+- **YIN pitch detection** — robust to strong harmonics and weak fundamentals
+  (the normal case for a guitar), with parabolic sub-sample accuracy.
+- **Real-time & stable** — ~30 Hz analysis, ~93 ms window, spike rejection and
+  cents-domain smoothing: the needle tracks fast but never dances.
+- **Cents-accurate tuning logic** — ±5¢ "in tune" band, data-driven tunings
+  (adding Drop D is one entry in a table).
+- **Clean, extensible TypeScript** — mic, detection, smoothing, music theory and
+  UI are separated so future GuitAI modules (chords, rhythm, exercises…) reuse
+  the same building blocks.
+- **Tested without a microphone** — 66 tests including synthesized guitar audio
+  run through the full detection pipeline, plus a jsdom test of the real UI.
 
 Planned / future modules (not implemented yet):
 
