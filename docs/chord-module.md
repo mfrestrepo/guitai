@@ -52,6 +52,33 @@ This gives beginners corrective feedback that is both precise and actionable,
 at the cost of a slightly slower ritual than a strum — a fine trade-off for a
 learning tool.
 
+### 2.b — The sustained-strum check (rasgueo mode, added later)
+
+Because a strum is what players actually *do*, the module now also offers a
+**Rasgueo** mode built on a real FFT analysis of the sustained chord
+(`src/chords/spectral.ts` + `strumCheck.ts`, session in `strumSession.ts`).
+It checks, per frame (~370 ms window, updated ~10×/s):
+
+1. **presence** — band energy at every sounding string's expected fundamental
+   (±55¢). A missing band ⇒ a muted string ("La 3ª no suena — quizá la tapa un
+   dedo"). To protect naturally quieter high strings, a string counts as
+   present when its band *mean* or its band *peak* clears the reference.
+2. **muting** — energy where "x" strings should be silent. Reliable for the low
+   strings of these open chords (nothing lower rings to alias onto them).
+3. **foreign notes** — strong spectral peaks in 82–400 Hz that are neither a
+   string band nor a chord tone ⇒ wrong fret / bad tuning. The 400 Hz cap is
+   safe for these chords: harmonics of *correctly* ringing strings stay inside
+   the chord's pitch classes up to ~400 Hz (verified empirically), so an
+   out-of-chord peak down there is genuinely wrong.
+
+Honest limits (validated in `strumCheck.test.ts`): the low open E's own 2nd
+harmonic sits *exactly* on E3, so in E-family chords a mis-fretted E3 string is
+masked — the app then reports the foreign note (F) instead of "string 4 is
+wrong". Similar octave-alias pairs (e.g. E2's 3rd harmonic ≈ open B3) can make
+a missing B3 look present. The strum check therefore answers *"does it sound
+like the chord?"* with reliable, actionable hints — while exact per-string
+attribution remains the per-string mode's job.
+
 ## 3. Note events instead of a pitch meter
 
 The microphone produces ~30 pitch readings per second of the *same ringing
@@ -103,9 +130,9 @@ fast, exactly like the tuner's note-name check.
 1. **F / barre chords level** — the data model already supports frets anywhere
    on the neck; the diagram generator already draws frets from a base row when
    needed.
-2. **Sustained-strum check** as a *complement* (not replacement): after the
-   per-string pass, ask for a strum and do a spectral sanity check — it can
-   reliably say "sounds like Em ✓" or "something is off", even if it cannot
-   pinpoint the guilty string. Document the accuracy limits.
-3. **Change-timer drill**: how many clean A→D→E changes per minute.
-4. **Song mode**: drive drills from real song progressions.
+2. **Strum-driven change drills** — auto-advance in Level-3 drills on a clean
+   strum, plus a "changes per minute" timer.
+3. **Song mode**: drive drills from real song progressions.
+4. Tune the strum thresholds against a real guitar + real mic (constants in
+   `chords/strumCheck.ts`); consider per-octave loudness normalization to make
+   presence checks less sensitive to which string the mic picks up best.

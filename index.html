@@ -100,12 +100,10 @@
 
           <div class="chords-intro">
             <p>
-              <strong>Cómo funciona:</strong> elige un acorde de los niveles de abajo.
-              Primero <strong>mira cómo se hace</strong> (diagrama + dedos), coloca la mano
-              y luego pulsa <strong>Empezar a tocar</strong>: la app te irá pidiendo cada
-              cuerda y te dirá si suena bien o qué corregir.
+              Elige un acorde 👉 míralo, coloca los dedos 👉 valídalo:
+              <strong>rasguea</strong> para un visto bueno rápido, o
+              <strong>cuerda a cuerda</strong> para afinar cada cuerda.
             </p>
-            <p>Los acordes salen en el orden en que se aprenden: ve nivel a nivel. &#128077;</p>
           </div>
 
           <div id="chord-levels" class="chord-levels"></div>
@@ -134,8 +132,19 @@
             </div>
             <h4 class="chord-subtitle">Cómo se hace</h4>
             <ol id="chord-howto" class="chord-howto"></ol>
-            <div id="chord-tips" class="chord-tips"></div>
-            <button id="chord-start" class="btn btn-primary btn-big" type="button">🎤 Empezar a tocar</button>
+            <details class="chord-tips" id="chord-tips">
+              <summary>💡 Consejos</summary>
+              <div id="chord-tips-body"></div>
+            </details>
+            <p class="mode-hint">¿Listo? Elige cómo validar el acorde:</p>
+            <div class="mode-row">
+              <button id="mode-strum" class="btn btn-primary btn-big" type="button">
+                🎸 Rasgueo
+              </button>
+              <button id="mode-arpeggio" class="btn btn-big btn-secondary" type="button">
+                🎵 Cuerda a cuerda
+              </button>
+            </div>
           </div>
 
           <!-- Práctica / validación -->
@@ -165,6 +174,26 @@
                 <button id="practice-next" class="btn btn-primary" type="button" hidden></button>
                 <button id="practice-finish" class="btn btn-ghost" type="button">Volver a la lista</button>
               </div>
+            </div>
+          </div>
+
+          <!-- Rasgueo: validación espectral del acorde sostenido -->
+          <div id="practice-strum" class="card practice-card strum-card" hidden>
+            <div class="practice-toolbar">
+              <div id="strum-mic-status" class="practice-mic-status"></div>
+              <button id="strum-mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
+            </div>
+
+            <div class="strum-stage">
+              <div id="strum-chord-name" class="strum-chord-name"></div>
+              <div id="strum-verdict" class="strum-verdict" aria-live="polite">Rasguea el acorde y déjalo sonar&hellip;</div>
+              <ul id="strum-issues" class="strum-issues"></ul>
+              <div class="strum-lights" id="strum-lights" role="img" aria-label="Cuerdas detectadas"></div>
+            </div>
+
+            <div class="practice-actions strum-actions">
+              <button id="strum-next" class="btn btn-primary" type="button" hidden></button>
+              <button id="strum-finish" class="btn btn-ghost" type="button">Volver a la lista</button>
             </div>
           </div>
         </div>

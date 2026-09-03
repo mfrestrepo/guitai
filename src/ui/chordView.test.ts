@@ -2,10 +2,10 @@
 /**
  * DOM integration test for the chord module against the real index.html.
  *
- * Verifies: the home screen (levels, chord chips, drills, progress), opening a
- * chord lesson (diagram, "cómo se hace", notes), entering practice, and the
- * error path when no microphone exists (jsdom has none). The live validation
- * state machine itself is covered by practice.test.ts + syntheticSession.test.ts.
+ * Covers: home tiles/progress, opening lessons and drills, the two validation
+ * modes (Rasgueo / Cuerda a cuerda), and the error path in jsdom (no mic).
+ * The validation state machines themselves are tested in practice.test.ts,
+ * strumCheck.test.ts and syntheticSession.test.ts.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,41 +26,46 @@ function mount() {
   return { ui, q };
 }
 
-const chipTexts = (q: (s: string) => Element) =>
-  Array.from(q('#chord-levels').querySelectorAll('.chord-chip')).map((c) => c.textContent);
+const tileNames = (q: (s: string) => Element) =>
+  Array.from(q('#chord-levels').querySelectorAll('.chord-tile-main')).map((c) => c.textContent);
+
+function openTile(q: (s: string) => Element, name: string): void {
+  const tile = Array.from(q('#chord-levels').querySelectorAll<HTMLButtonElement>('.chord-tile'))
+    .find((t) => t.querySelector('.chord-tile-main')?.textContent === name);
+  if (!tile) throw new Error(`tile ${name} not found`);
+  tile.click();
+}
 
 describe('ChordUi against index.html', () => {
-  it('renders the three progressive levels with seven chords and drills', () => {
+  it('renders the three progressive levels with seven chord tiles and drills', () => {
     const { q } = mount();
     expect(q('#chords-home').hasAttribute('hidden')).toBe(false);
-    expect(chipTexts(q)).toEqual(['Em', 'E', 'Am', 'A', 'D', 'C', 'G']);
+    expect(tileNames(q)).toEqual(['Em', 'E', 'Am', 'A', 'D', 'C', 'G']);
     expect(q('#chord-levels').querySelectorAll('.level-card').length).toBe(3);
     expect(q('#chord-levels').querySelectorAll('.drill-chip').length).toBe(3);
     expect(q('#chords-progress').textContent).toContain('0 de 7');
   });
 
-  it('opens the Em lesson with diagram, how-to and notes', () => {
+  it('opens the Em lesson with diagram, how-to, tips and both modes', () => {
     const { q } = mount();
-    const emChip = Array.from(q('#chord-levels').querySelectorAll<HTMLButtonElement>('.chord-chip'))
-      .find((c) => c.textContent === 'Em')!;
-    emChip.click();
+    openTile(q, 'Em');
 
     expect(q('#chord-lesson').hasAttribute('hidden')).toBe(false);
     expect(q('#chords-home').hasAttribute('hidden')).toBe(true);
-    expect(q('#chord-lesson-title').textContent).toBe('Acorde Em');
+    expect(q('#chord-lesson-title').textContent).toBe('Em');
     expect(q('#chord-name').textContent).toBe('Em · Mi menor');
     expect(q('#chord-diagram').innerHTML).toContain('Diagrama de Em');
     expect(q('#chord-howto').querySelectorAll('li').length).toBeGreaterThanOrEqual(3);
     expect(q('#chord-notes').textContent).toContain('Mi (E2)');
-    expect(q<HTMLButtonElement>('#chord-start').textContent).toContain('Empezar a tocar');
+    expect(q('#mode-strum').textContent).toContain('Rasgueo');
+    expect(q('#mode-arpeggio').textContent).toContain('Cuerda a cuerda');
     expect(q('#practice').hasAttribute('hidden')).toBe(true);
+    expect(q('#practice-strum').hasAttribute('hidden')).toBe(true);
   });
 
   it('back button returns to the home screen', () => {
     const { q } = mount();
-    Array.from(q('#chord-levels').querySelectorAll<HTMLButtonElement>('.chord-chip'))
-      .find((c) => c.textContent === 'G')!
-      .click();
+    openTile(q, 'G');
     q<HTMLButtonElement>('#chord-lesson-back').click();
     expect(q('#chords-home').hasAttribute('hidden')).toBe(false);
     expect(q('#chord-lesson').hasAttribute('hidden')).toBe(true);
@@ -76,17 +81,35 @@ describe('ChordUi against index.html', () => {
     expect(q('#chord-name').textContent).toContain('A ·');
   });
 
-  it('entering practice without a microphone shows a clear error message', async () => {
+  it('arpeggio mode without a microphone shows a clear error', async () => {
     const { q } = mount();
-    Array.from(q('#chord-levels').querySelectorAll<HTMLButtonElement>('.chord-chip'))
-      .find((c) => c.textContent === 'Em')!
-      .click();
-    q<HTMLButtonElement>('#chord-start').click();
-
-    // session.start() is async; jsdom has no getUserMedia → error path.
+    openTile(q, 'Em');
+    q<HTMLButtonElement>('#mode-arpeggio').click();
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(q('#practice').hasAttribute('hidden')).toBe(false);
+    expect(q('#practice-strum').hasAttribute('hidden')).toBe(true);
     expect(q('#practice-mic-status').textContent).toContain('No se pudo');
     expect(q<HTMLButtonElement>('#practice-mic-button').textContent).toBe('Iniciar micrófono');
+  });
+
+  it('strum mode without a microphone shows a clear error', async () => {
+    const { q } = mount();
+    openTile(q, 'A');
+    q<HTMLButtonElement>('#mode-strum').click();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(q('#practice-strum').hasAttribute('hidden')).toBe(false);
+    expect(q('#practice').hasAttribute('hidden')).toBe(true);
+    expect(q('#strum-mic-status').textContent).toContain('No se pudo');
+    expect(q<HTMLButtonElement>('#strum-mic-button').textContent).toBe('Iniciar micrófono');
+    expect(q('#strum-chord-name').textContent).toBe('A');
+  });
+
+  it('deactivating and returning home works cleanly from any screen', () => {
+    const { ui, q } = mount();
+    openTile(q, 'C');
+    expect(() => ui.deactivate()).not.toThrow();
+    ui.showHome();
+    expect(q('#chords-home').hasAttribute('hidden')).toBe(false);
+    expect(() => ui.deactivate()).not.toThrow();
   });
 });

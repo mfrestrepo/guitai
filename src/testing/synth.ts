@@ -86,6 +86,58 @@ export function synthesizeNoise(sampleCount: number, amplitude = 0.5, seed = 1):
   return buf;
 }
 
+export interface ChordSynthSpec {
+  /** Simultaneous fundamental frequencies (Hz) — a strummed chord. */
+  readonly frequencies: readonly number[];
+  readonly sampleRate: number;
+  readonly sampleCount: number;
+  /** Per-string amplitude (default 0.4). */
+  readonly amplitude?: number;
+  /** Exponential decay time constant in seconds (default 0.9). */
+  readonly decaySeconds?: number;
+  readonly noiseAmplitude?: number;
+  readonly seed?: number;
+}
+
+/**
+ * Synthesize a strummed chord: all frequencies ring together with a small
+ * harmonic series and an exponential decay, plus optional noise.
+ */
+export function synthesizeChord(spec: ChordSynthSpec): Float32Array {
+  const { frequencies, sampleRate, sampleCount } = spec;
+  const amplitude = spec.amplitude ?? 0.4;
+  const decaySeconds = spec.decaySeconds ?? 0.9;
+  const rng = mulberry32(spec.seed ?? 3);
+  const partialGains = [1, 0.5, 0.28, 0.16];
+  const decayFactor = Math.exp(-1 / (decaySeconds * sampleRate));
+
+  const voices = frequencies.map((frequency) => ({
+    frequency,
+    phases: partialGains.map(() => rng() * 2 * Math.PI),
+  }));
+
+  const buf = new Float32Array(sampleCount);
+  let envelope = 1;
+  for (let i = 0; i < sampleCount; i++) {
+    const t = i / sampleRate;
+    let value = 0;
+    for (const voice of voices) {
+      for (let k = 0; k < partialGains.length; k++) {
+        value += partialGains[k] * Math.sin(2 * Math.PI * voice.frequency * (k + 1) * t + voice.phases[k]);
+      }
+    }
+    buf[i] = amplitude * envelope * value;
+    envelope *= decayFactor;
+  }
+
+  if (spec.noiseAmplitude) {
+    for (let i = 0; i < sampleCount; i++) {
+      buf[i] += spec.noiseAmplitude * (rng() * 2 - 1);
+    }
+  }
+  return buf;
+}
+
 export function rmsOf(buf: Float32Array): number {
   let sum = 0;
   for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];

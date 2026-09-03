@@ -3,7 +3,7 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-130%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-140%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
@@ -84,17 +84,22 @@ A progressive course for absolute beginners:
 - **Nivel 2 · C y G**: the two "hard" open chords.
 - **Nivel 3 · Cambios**: real change drills — A–D–E, G–C–D, Em–C–G–D.
 
-Every chord opens a **lesson card**: an SVG diagram of the frets/fingers, a
-step-by-step *cómo se hace* and tips in Spanish, the notes that should sound,
-and a big **Empezar a tocar** button.
+Every chord opens a **lesson card**: an SVG diagram of the frets/fingers,
+short *cómo se hace* steps (tips are tucked away in a collapsible), the notes
+that should sound, and **two ways to validate**:
 
-Validation is **per string** (arpeggio): the app asks for each string in order,
-listens with the same YIN detector as the tuner, and tells you exactly what to
-fix — e.g. *"Suena Mi (E3), pero la 5ª cuerda debe sonar Si (B2). Parece que
-tocaste la 4ª cuerda."* Muted strings ("x") are never requested. Chord progress
-is saved locally (✓ badges on the chord chips).
+1. **🎸 Rasgueo** (the friendly default) — strum the chord and hold it: the app
+   runs a spectral analysis and answers immediately with a big *"¡Bien! Suena
+   a Em"*, or tells you concisely what to fix (a string that does not sound,
+   one that should be muted and rings, or a foreign note). Clean strums twice
+   in a row mark the chord as learned.
+2. **🎵 Cuerda a cuerda** — the precise mode: the app asks for each string in
+   order and validates with the tuner-grade YIN detector, e.g. *"Suena Mi
+   (E3), pero la 5ª cuerda debe sonar Si (B2). Parece que tocaste la 4ª
+   cuerda."*
 
-Design rationale, limits and how to add chords: see
+Chord progress is saved locally (✓ badges on the chord tiles). Design
+rationale, detection limits and how to add chords: see
 [`docs/chord-module.md`](docs/chord-module.md).
 
 ### Scripts
@@ -209,7 +214,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**130 tests in 17 files** — `npm test`:
+**140 tests in 18 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |
@@ -223,17 +228,19 @@ Core logic is kept free of the microphone and DOM so it is testable directly.
 | `chords/evaluate.test.ts`   | Per-string ok/almost/wrong bands, muted-string guard          |
 | `chords/events.test.ts`     | Note-onset state machine (blips, ringing, retrigger)          |
 | `chords/practice.test.ts`   | Per-string validation flow: advance, wrong, skip, master      |
+| `chords/strumCheck.test.ts` | **Synthesized strums**: clean chords, missing/muted/foreign   |
 | `chords/syntheticSession.test.ts` | **Synthesized audio** through analyzer → events → practice |
 | `chords/copy.test.ts`       | Spanish wording built from data (diagram/how-to/feedback)     |
 | `chords/progress.test.ts`   | localStorage progress + corrupt-data recovery                 |
 | `ui/chordDiagram.test.ts`   | SVG diagram content (dots, rings, crosses, fingers)           |
 | `ui/view.test.ts`           | Real `index.html` (jsdom): tuner verdicts, needle, meter      |
-| `ui/chordView.test.ts`      | Real `index.html` (jsdom): levels, lesson, drills, mic error  |
+| `ui/chordView.test.ts`      | Real `index.html` (jsdom): tiles, modes, drills, mic errors   |
 
 > The "does the audio actually work?" question is answered without a
-> microphone: `pitch/pipeline.test.ts` and `chords/syntheticSession.test.ts`
-> synthesize plucked-string-like audio (harmonics + noise + decay) and feed it
-> through the same analyzers the engines use.
+> microphone: `pitch/pipeline.test.ts`, `chords/syntheticSession.test.ts` and
+> `chords/strumCheck.test.ts` synthesize plucked-string audio (harmonics +
+> noise + decay, full strummed chords included) and feed it through the same
+> analyzers the engines use.
 
 ---
 
@@ -262,27 +269,29 @@ cents = 1200 · log₂(detectedHz / targetHz)
 
 ## Roadmap (suggested next steps)
 
-1. Try both modules with a real guitar + real mic; tune the silence gate and
-   the smoothing responsiveness to your setup (constants are centralized in
-   `audio/frameAnalysis.ts`, `pitch/smoother.ts`).
+1. Try both validation modes with a real guitar + real mic; tune the strum
+   thresholds (constants in `chords/strumCheck.ts`) to your setup.
 2. Expand the chord course: barre chords (F…), more levels and drills — each
    chord/drill is data in `chords/catalog.ts` / `chords/curriculum.ts`.
-3. Sustained-strum validation (polyphonic spectral check) as a complement to
-   the per-string mode — see `docs/chord-module.md` for the honest trade-offs.
+3. Strum-driven *change drills* (auto-advance on a clean strum) and a
+   changes-per-minute timer for Level 3.
 4. Alternative tunings (Drop D is one line in `theory/tunings.ts`) and
    per-tab progress.
 5. Extract the audio analysis into an `AudioWorklet` if CPU matters on slower
-   laptops (currently analysis runs on the main thread at ≈30 Hz on a
-   4096-sample window).
+   laptops.
 6. Wire a real device test: an end-to-end browser test needs a headless
    browser with microphone emulation (Playwright + Chromium flags).
 
 ## Known limitations
 
-- **Monophonic analysis by design.** One note at a time. That is exactly what a
-  tuner needs and what the chord *arpeggio* mode asks for; strummed chords
-  (several notes at once) are not recognized yet — see
-  [`docs/chord-module.md`](docs/chord-module.md).
+- **Monophonic analysis by design** for the tuner and the *cuerda a cuerda*
+  mode (one note at a time). The *rasgueo* mode adds a **spectral chord
+  check**, but a single microphone cannot perfectly separate six simultaneous
+  strings: some errors are masked by harmonics (e.g. the open E2's 2nd
+  harmonic sits exactly on E3), so the strum check reports reliably on
+  "missing low/mid strings, wrongly-ringing muted strings, and foreign notes"
+  but cannot attribute every failure to a string — the per-string mode covers
+  that. Details: [`docs/chord-module.md`](docs/chord-module.md).
 - **Octave ambiguity on even-only spectra** is inherent to correlation-based
   methods (a signal with only even harmonics is literally periodic at half the
   period). Open guitar strings always contain odd harmonics, so in practice

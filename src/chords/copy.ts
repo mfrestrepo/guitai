@@ -12,6 +12,7 @@ import type { ChordDef, StringNumber } from './catalog';
 import { expectedMidi } from './catalog';
 import { centsBetween } from '../theory/music';
 import type { NoteCheck } from './evaluate';
+import type { StrumIssueKind as StrumCheckIssueKind } from './strumCheck';
 
 const SOLFEO = [
   'Do',
@@ -124,6 +125,19 @@ export function otherStringMatched(chord: ChordDef, detectedHz: number): StringN
     if (Math.abs(centsBetween(detectedHz, freq)) <= 60) return string.number;
   }
   return null;
+}
+
+/** Concise, friendly wording for one strum-check issue. */
+export function strumIssueLine(kind: StrumCheckIssueKind, noteLabel?: string, stringNumber?: StringNumber): string {
+  const ordinal = stringNumber !== undefined ? stringOrdinal(stringNumber) : '';
+  switch (kind) {
+    case 'missing':
+      return `La ${ordinal} no suena — quizá la tapa un dedo.`;
+    case 'muted-ring':
+      return `Suena la ${ordinal} y no debería — no la rasgues.`;
+    case 'foreign':
+      return `Se oye un ${noteLabel ?? 'tono'} que no es del acorde.`;
+  }
 }
 
 /**
