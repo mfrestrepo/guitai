@@ -3,7 +3,7 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-140%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-150%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
@@ -213,7 +213,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**140 tests in 18 files** — `npm test`:
+**150 tests in 20 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |

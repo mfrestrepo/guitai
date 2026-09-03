@@ -138,3 +138,21 @@ fast, exactly like the tuner's note-name check.
 4. Tune the strum thresholds against a real guitar + real mic (constants in
    `chords/strumCheck.ts`); consider per-octave loudness normalization to make
    presence checks less sensitive to which string the mic picks up best.
+
+## 6. Visual design notes (the didactic UI)
+
+The chord screens follow a "show, don't tell" principle: the fretboard diagram
+is the hero everywhere, and words are reduced to short chips.
+
+- **Home** is a *learning path*: numbered level blocks, chord cards that draw
+  their own mini diagram, a circular progress ring, and drills shown as chord
+  chains (A → D → E).
+- **Lesson** shows one large diagram, fact chips (tipo, cuerdas, traste
+  máximo), and hides "cómo se hace" and tips behind collapsible toggles.
+- **Validation is visual**: during *cuerda a cuerda* the diagram lights the
+  string being asked (and turns strings green/red as they pass/fail); the only
+  prompt is a tiny label like "5ª → B2". During *rasgueo*, verdicts are short
+  ("✓ Em", "Casi Em") with per-issue chips and string lights.
+- Note labels in diagrams/lights use international letters (E2), never solfeo.
+  Diagram colors come from CSS variables (see `ui/chordDiagram.ts` highlight),
+  which is also what lets tests assert state classes.

@@ -9,7 +9,7 @@
  */
 
 import type { ChordDef, StringNumber } from './catalog';
-import { expectedMidi } from './catalog';
+import { expectedMidi, expectedNoteName } from './catalog';
 import { centsBetween } from '../theory/music';
 import type { NoteCheck } from './evaluate';
 import type { StrumIssueKind as StrumCheckIssueKind } from './strumCheck';
@@ -98,13 +98,11 @@ export function chordHowToLines(chord: ChordDef): string[] {
   return lines;
 }
 
-/** What the learner should hear on a given string of a chord. */
+/** What the learner should hear on a given string of a chord (short label). */
 export function expectedPhrase(chord: ChordDef, stringNumber: StringNumber): string {
-  const midi = expectedMidi(chord, stringNumber);
-  if (midi === null) {
-    return `La ${stringOrdinal(stringNumber)} no debe sonar (muda).`;
-  }
-  return `La ${stringOrdinal(stringNumber)} debe sonar ${noteLabelEs(midi)}.`;
+  const name = expectedNoteName(chord, stringNumber);
+  if (name === null) return `${stringOrdinal(stringNumber)} muda`;
+  return `${stringOrdinal(stringNumber)} → ${name}`;
 }
 
 /** Fret / open description used in corrective messages ("en el traste 2", "al aire"). */
@@ -127,51 +125,45 @@ export function otherStringMatched(chord: ChordDef, detectedHz: number): StringN
   return null;
 }
 
-/** Concise, friendly wording for one strum-check issue. */
+/** Concise issue chip for the strum mode (≤ a few words). */
 export function strumIssueLine(kind: StrumCheckIssueKind, noteLabel?: string, stringNumber?: StringNumber): string {
   const ordinal = stringNumber !== undefined ? stringOrdinal(stringNumber) : '';
   switch (kind) {
     case 'missing':
-      return `La ${ordinal} no suena — quizá la tapa un dedo.`;
+      return `No suena la ${ordinal}`;
     case 'muted-ring':
-      return `Suena la ${ordinal} y no debería — no la rasgues.`;
+      return `La ${ordinal} no debe sonar`;
     case 'foreign':
-      return `Se oye un ${noteLabel ?? 'tono'} que no es del acorde.`;
+      return `Se oye ${noteLabel ?? 'un tono ajeno'}`;
   }
 }
 
-/**
- * Corrective message after one string check. Returns text + a style the UI
- * can use to color the feedback box.
- */
+/** Short corrective message after one string check (letter-only labels). */
 export function describeCheck(
   chord: ChordDef,
   check: NoteCheck,
 ): { text: string; style: 'success' | 'warning' | 'error' } {
   const ordinal = stringOrdinal(check.targetStringNumber);
-  const expected = noteLabelFromName(check.expectedName);
+  const expected = check.expectedName;
 
   if (check.kind === 'ok') {
-    return {
-      text: `¡Correcta! La ${ordinal} suena ${expected}.`,
-      style: 'success',
-    };
+    return { text: `${ordinal} ✓ ${expected}`, style: 'success' };
   }
 
-  const detected = noteLabelFromName(check.detectedName);
   if (check.kind === 'almost') {
     return {
-      text: `Muy cerca (${Math.round(check.cents)}¢): suena ${detected} y debería ser ${expected}. ¿Está afinada la guitarra?`,
+      text: `${expected} ± ${Math.round(check.cents)}¢ · ¿afinada?`,
       style: 'warning',
     };
   }
 
-  const position = positionPhrase(chord, check.targetStringNumber);
-  const base = `Suena ${detected}, pero la ${ordinal} debe sonar ${expected} (${position}).`;
+  const detected = check.detectedName;
   const other = otherStringMatched(chord, check.detectedFrequency);
+  const position = positionPhrase(chord, check.targetStringNumber);
+  const base = `Suena ${detected} · debe ${expected} (${position})`;
   const hint =
     other !== null && other !== check.targetStringNumber
-      ? ` Parece que tocaste la ${stringOrdinal(other)} — toca solo la ${ordinal}.`
-      : ' Revisa tus dedos y vuelve a tocar esa cuerda.';
+      ? ` · tocaste la ${stringOrdinal(other)}`
+      : '';
   return { text: base + hint, style: 'error' };
 }

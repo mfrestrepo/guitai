@@ -13,7 +13,7 @@
     <div id="app">
       <nav class="app-nav" aria-label="Módulos de GuitAI">
         <button type="button" class="nav-btn active" data-view="tuner">🎛️ Afinador</button>
-        <button type="button" class="nav-btn" data-view="chords">🎸 Aprende acordes</button>
+        <button type="button" class="nav-btn" data-view="chords">🎸 Acordes</button>
       </nav>
 
       <!-- ======================= MÓDULO 1 · AFINADOR ======================= -->
@@ -76,10 +76,7 @@
               <div class="level-track"><div id="level-fill" class="level-fill"></div></div>
             </div>
             <ol class="hints">
-              <li>Pulsa <strong>Iniciar micrófono</strong> y permite el acceso.</li>
-              <li>Toca <strong>una cuerda cada vez</strong> y deja que suene.</li>
-              <li>Gira la clavija hasta que la aguja se centre y se ponga verde.</li>
-              <li>Tip: haz clic en una cuerda de arriba para fijarla como objetivo.</li>
+              <li>Toca una cuerda y gira la clavija hasta el verde.</li>
             </ol>
           </section>
         </main>
@@ -87,84 +84,84 @@
 
       <!-- ==================== MÓDULO 2 · APRENDE ACORDES ==================== -->
       <section id="view-chords" hidden>
-        <!-- Pantalla de inicio: niveles y acordes -->
+        <!-- Home: camino de aprendizaje -->
         <div id="chords-home">
-          <header class="chords-header">
-            <div class="brand">
-              <span class="brand-mark">🎸</span>
-              <h1>Aprende acordes</h1>
-              <span class="brand-sub">desde cero</span>
+          <div class="chords-head">
+            <div>
+              <h1 class="chords-title">Acordes</h1>
+              <p class="chords-tagline">Tu camino del 1 al 3</p>
             </div>
             <div id="chords-progress" class="chords-progress" aria-live="polite"></div>
-          </header>
-
-          <div class="chords-intro">
-            <p>
-              Elige un acorde 👉 míralo, coloca los dedos 👉 valídalo:
-              <strong>rasguea</strong> para un visto bueno rápido, o
-              <strong>cuerda a cuerda</strong> para afinar cada cuerda.
-            </p>
           </div>
-
           <div id="chord-levels" class="chord-levels"></div>
         </div>
 
-        <!-- Pantalla de lección (un acorde o una secuencia de práctica) -->
+        <!-- Lección -->
         <div id="chord-lesson" hidden>
-          <button id="chord-lesson-back" class="btn btn-ghost" type="button">&larr; Volver a la lista</button>
-
-          <div class="lesson-head">
-            <div>
-              <h2 id="chord-lesson-title" class="lesson-title"></h2>
-              <p id="chord-lesson-context" class="lesson-context"></p>
-            </div>
+          <div class="lesson-top">
+            <button id="chord-lesson-back" class="btn btn-ghost back-btn" type="button" aria-label="Volver">&larr;</button>
+            <div class="lesson-title" id="chord-lesson-title"></div>
+            <div id="chord-lesson-context" class="lesson-context"></div>
+            <div class="lesson-top-spacer"></div>
             <div id="chord-lesson-progress" class="chords-progress" aria-live="polite"></div>
           </div>
 
-          <!-- Ficha del acorde -->
-          <div id="chord-card" class="card chord-card">
-            <div class="chord-card-top">
+          <div class="lesson-layout">
+            <!-- Héroe: diagrama grande -->
+            <div class="card hero-panel">
               <div id="chord-diagram" class="chord-diagram" aria-label="Diagrama del acorde"></div>
-              <div class="chord-info">
-                <h3 id="chord-name"></h3>
-                <p id="chord-notes" class="chord-notes"></p>
-              </div>
+              <div class="hero-name" id="chord-name"></div>
+              <div id="chord-notes" class="chord-notes"></div>
             </div>
-            <h4 class="chord-subtitle">Cómo se hace</h4>
-            <ol id="chord-howto" class="chord-howto"></ol>
-            <details class="chord-tips" id="chord-tips">
-              <summary>💡 Consejos</summary>
-              <div id="chord-tips-body"></div>
-            </details>
-            <p class="mode-hint">¿Listo? Elige cómo validar el acorde:</p>
-            <div class="mode-row">
-              <button id="mode-strum" class="btn btn-primary btn-big" type="button">
-                🎸 Rasgueo
-              </button>
-              <button id="mode-arpeggio" class="btn btn-big btn-secondary" type="button">
-                🎵 Cuerda a cuerda
-              </button>
+
+            <!-- Lateral: datos y modos -->
+            <div class="card side-panel">
+              <div id="chord-facts" class="chord-facts"></div>
+              <details id="chord-howto-details" class="chord-details">
+                <summary>👆 Cómo se hace</summary>
+                <ol id="chord-howto" class="chord-howto"></ol>
+              </details>
+              <details id="chord-tips" class="chord-details">
+                <summary>💡 Consejos</summary>
+                <div id="chord-tips-body"></div>
+              </details>
+
+              <div class="mode-title">Valida el acorde</div>
+              <div class="mode-row">
+                <button id="mode-strum" class="btn btn-primary btn-mode" type="button">
+                  <span class="mode-emoji">🎸</span>
+                  <span class="mode-label">Rasgueo</span>
+                  <span class="mode-sub">respuesta rápida</span>
+                </button>
+                <button id="mode-arpeggio" class="btn btn-secondary btn-mode" type="button">
+                  <span class="mode-emoji">🎵</span>
+                  <span class="mode-label">Cuerda a cuerda</span>
+                  <span class="mode-sub">precisión</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Práctica / validación -->
+          <!-- Cuerda a cuerda -->
           <div id="practice" class="card practice-card" hidden>
-            <div class="practice-toolbar">
-              <div id="practice-mic-status" class="practice-mic-status"></div>
+            <div class="practice-top">
+              <button id="practice-close" class="btn btn-ghost back-btn" type="button" aria-label="Cerrar práctica">&times;</button>
+              <span class="practice-mode-tag">🎵 Cuerda a cuerda</span>
+              <span id="practice-mic-status" class="practice-mic-status"></span>
               <button id="practice-mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
             </div>
 
+            <div class="practice-stage">
+              <div id="practice-diagram" class="practice-diagram"></div>
+              <div id="practice-prompt" class="practice-prompt"></div>
+            </div>
+
             <div id="practice-steps" class="practice-steps" role="list"></div>
-            <div id="practice-prompt" class="practice-prompt"></div>
             <div id="practice-feedback" class="practice-feedback" hidden></div>
 
             <div class="practice-actions">
-              <button id="practice-force" class="btn btn-ghost" type="button" hidden>
-                Ya la toqué &rarr; comprobar
-              </button>
-              <button id="practice-skip" class="btn btn-ghost" type="button" hidden>
-                Saltar esta cuerda
-              </button>
+              <button id="practice-force" class="btn btn-ghost" type="button" hidden>Ya la toqué &rarr;</button>
+              <button id="practice-skip" class="btn btn-ghost" type="button" hidden>Saltar cuerda</button>
             </div>
 
             <div id="practice-done" class="practice-done" hidden>
@@ -172,34 +169,36 @@
               <div class="practice-done-actions">
                 <button id="practice-repeat" class="btn btn-primary" type="button">Repetir</button>
                 <button id="practice-next" class="btn btn-primary" type="button" hidden></button>
-                <button id="practice-finish" class="btn btn-ghost" type="button">Volver a la lista</button>
+                <button id="practice-finish" class="btn btn-ghost" type="button">Lista</button>
               </div>
             </div>
           </div>
 
-          <!-- Rasgueo: validación espectral del acorde sostenido -->
+          <!-- Rasgueo -->
           <div id="practice-strum" class="card practice-card strum-card" hidden>
-            <div class="practice-toolbar">
-              <div id="strum-mic-status" class="practice-mic-status"></div>
+            <div class="practice-top">
+              <button id="strum-close" class="btn btn-ghost back-btn" type="button" aria-label="Cerrar rasgueo">&times;</button>
+              <span class="practice-mode-tag">🎸 Rasgueo</span>
+              <span id="strum-mic-status" class="practice-mic-status"></span>
               <button id="strum-mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
             </div>
 
-            <div class="strum-stage">
+            <div class="strum-stage" id="strum-stage">
               <div id="strum-chord-name" class="strum-chord-name"></div>
-              <div id="strum-verdict" class="strum-verdict" aria-live="polite">Rasguea el acorde y mantenlo unos segundos&hellip;</div>
+              <div id="strum-verdict" class="strum-verdict" aria-live="polite">Rasguea y mantenlo unos segundos&hellip;</div>
               <ul id="strum-issues" class="strum-issues"></ul>
-              <div class="strum-lights" id="strum-lights" role="img" aria-label="Cuerdas detectadas"></div>
             </div>
+            <div class="strum-lights" id="strum-lights" role="img" aria-label="Cuerdas detectadas"></div>
 
             <div class="practice-actions strum-actions">
               <button id="strum-next" class="btn btn-primary" type="button" hidden></button>
-              <button id="strum-finish" class="btn btn-ghost" type="button">Volver a la lista</button>
+              <button id="strum-finish" class="btn btn-ghost" type="button">Lista</button>
             </div>
           </div>
         </div>
       </section>
 
-      <footer>GuitAI &middot; afinador + acordes para principiantes &middot; Web Audio API</footer>
+      <footer>GuitAI &middot; afinador + acordes</footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

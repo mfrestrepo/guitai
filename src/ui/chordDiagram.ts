@@ -3,112 +3,109 @@
  *
  * Draws a classic chord box: vertical strings (6 = left … 1 = right), fret
  * rows below a nut, open-string rings above the nut and an ✕ for muted
- * strings, plus the recommended finger numbers inside the dots. The UI just
- * injects the returned SVG string; the generator is unit tested.
+ * strings, plus the recommended finger numbers inside the dots.
+ *
+ * Two extras make it the *visual core* of the didactic UI:
+ *  - colors are driven by CSS custom properties, so a caller can light strings
+ *    per state (ok / wrong / sounding) by passing `highlight`;
+ *  - `scale` produces the same diagram at hero or mini-card size.
  */
 
-import type { ChordDef } from '../chords/catalog';
+import type { ChordDef, StringNumber } from '../chords/catalog';
 
-const COLORS = {
-  background: 'transparent',
-  line: '#3a4a5e',
-  dot: '#22d3ee',
-  dotText: '#06121a',
-  open: '#8ea0b5',
-  muted: '#f87171',
-  fretLabel: '#8ea0b5',
-};
+export type StringState = 'ok' | 'wrong' | 'sounding';
 
-interface Geometry {
-  width: number;
-  height: number;
-  left: number;
-  right: number;
-  top: number;
-  rowHeight: number;
-  maxFret: number;
-  stringGap: number;
+export interface ChordDiagramOptions {
+  /** Per-string visual state used while validating/practicing. */
+  highlight?: Readonly<Partial<Record<StringNumber, StringState>>>;
+  /** 1 = hero size (default), smaller values = mini diagrams. */
+  scale?: number;
+  /** Draw the nut as a thick bar (default true). */
+  showNut?: boolean;
 }
 
-export function chordDiagramSvg(chord: ChordDef): string {
+const DEFAULT_ACCENT = '#22d3ee';
+
+export function chordDiagramSvg(
+  chord: ChordDef,
+  options: ChordDiagramOptions = {},
+): string {
+  const { highlight = {}, scale = 1, showNut = true } = options;
+  const k = scale;
+
   const fretted = chord.strings
     .map((s) => s.fret)
     .filter((f): f is number => f !== null && f > 0);
   const maxFret = fretted.length > 0 ? Math.max(...fretted) : 1;
 
-  const rowHeight = 34;
-  const marginTop = 46; // room for open / muted markers
-  const marginBottom = 24; // room for string labels
-  const top = 30; // nut position
-  const left = 26;
-  const right = 26;
-  const width = left + right + 40 * 5; // 6 strings
-  const height = marginTop + maxFret * rowHeight + marginBottom;
+  const rowHeight = 34 * k;
+  const top = 30 * k;
+  const left = 26 * k;
+  const right = 26 * k;
+  const stringGap = 40 * k;
+  const width = left + right + stringGap * 5;
+  const bottomLabels = 22 * k;
+  const height = 10 * k + top + maxFret * rowHeight + bottomLabels;
 
-  const g: Geometry = { width, height, left, right, top, rowHeight, maxFret, stringGap: 40 };
-
-  const x = (stringNumber: number) =>
-    g.left + (6 - stringNumber) * g.stringGap; // string 6 at the left
-  const yOfFret = (fret: number) => g.top + (fret - 1) * g.rowHeight + g.rowHeight / 2;
+  const x = (stringNumber: number) => left + (6 - stringNumber) * stringGap;
+  const yOfFret = (fret: number) => top + (fret - 1) * rowHeight + rowHeight / 2;
+  const fontSize = 13 * k;
+  const markerRadius = 12 * k;
+  const openRingY = top - 14 * k;
 
   const parts: string[] = [];
   parts.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Diagrama de ${chord.displayName}">`,
   );
 
-  // Nut (only meaningful when the first fret is included).
-  if (maxFret >= 1) {
+  // Nut.
+  if (showNut) {
     parts.push(
-      `<rect x="${g.left - 6}" y="${g.top - 3}" width="${g.right + (5 * g.stringGap) + 12}" height="4" rx="1.5" fill="${COLORS.line}"/>`,
+      `<rect class="cd-nut" x="${left - 6 * k}" y="${top - 3 * k}" width="${right + 5 * stringGap + 12 * k}" height="${4 * k}" rx="${1.5 * k}"/>`,
     );
   }
 
   // Fret rows.
   for (let row = 1; row <= maxFret; row++) {
-    const yy = g.top + row * g.rowHeight;
+    const yy = top + row * rowHeight;
     parts.push(
-      `<line x1="${g.left}" y1="${yy}" x2="${g.left + 5 * g.stringGap}" y2="${yy}" stroke="${COLORS.line}" stroke-width="1.5"/>`,
+      `<line class="cd-fret" x1="${left}" y1="${yy}" x2="${left + 5 * stringGap}" y2="${yy}"/>`,
     );
   }
 
-  // Strings.
+  // Strings + bottom number labels.
   for (const string of chord.strings) {
     const xx = x(string.number);
-    const topY = g.top;
-    const bottomY = g.top + maxFret * g.rowHeight;
     parts.push(
-      `<line x1="${xx}" y1="${topY}" x2="${xx}" y2="${bottomY}" stroke="${COLORS.line}" stroke-width="1.5"/>`,
+      `<line class="cd-string" x1="${xx}" y1="${top}" x2="${xx}" y2="${top + maxFret * rowHeight}"/>`,
     );
-    // String number label at the bottom.
     parts.push(
-      `<text x="${xx}" y="${bottomY + 16}" text-anchor="middle" font-size="10" fill="${COLORS.fretLabel}" font-family="system-ui">${string.number}</text>`,
+      `<text class="cd-string-label" x="${xx}" y="${top + maxFret * rowHeight + 15 * k}" text-anchor="middle" font-size="${9 * k}">${string.number}</text>`,
     );
   }
 
-  // Fingered dots, open rings and muted crosses.
+  // Markers (dots / open rings / muted crosses).
   for (const string of chord.strings) {
     const xx = x(string.number);
+    const state = highlight[string.number] ?? 'idle';
+
     if (string.fret === null) {
-      // Muted: ✕ above the nut.
       parts.push(
-        `<text x="${xx}" y="${g.top - 12}" text-anchor="middle" font-size="17" font-weight="700" fill="${COLORS.muted}" font-family="system-ui">&#10005;</text>`,
+        `<text class="cd-mute cd-s${string.number} cd-${state}" x="${xx}" y="${top - 8 * k}" text-anchor="middle" font-size="${17 * k}" font-weight="700">&#10005;</text>`,
       );
       continue;
     }
     if (string.fret === 0) {
-      // Open: ring above the nut.
       parts.push(
-        `<circle cx="${xx}" cy="${g.top - 13}" r="6.5" fill="none" stroke="${COLORS.open}" stroke-width="1.6"/>`,
+        `<circle class="cd-ring cd-s${string.number} cd-${state}" cx="${xx}" cy="${openRingY}" r="${6.5 * k}"/>`,
       );
       continue;
     }
     const cy = yOfFret(string.fret);
-    parts.push(
-      `<circle cx="${xx}" cy="${cy}" r="12" fill="${COLORS.dot}"/>`,
-    );
+    parts.push(`<circle class="cd-dot cd-s${string.number} cd-${state}" cx="${xx}" cy="${cy}" r="${markerRadius}"/>`);
     if (string.finger) {
       parts.push(
-        `<text x="${xx}" y="${cy + 4}" text-anchor="middle" font-size="13" font-weight="700" fill="${COLORS.dotText}" font-family="system-ui">${string.finger}</text>`,
+        `<text class="cd-finger cd-s${string.number}" x="${xx}" y="${cy + 4 * k}" text-anchor="middle" font-size="${fontSize}" font-weight="700">${string.finger}</text>`,
       );
     }
   }
@@ -116,3 +113,6 @@ export function chordDiagramSvg(chord: ChordDef): string {
   parts.push('</svg>');
   return parts.join('');
 }
+
+/** Export so callers can compute colors consistently (CSS vars live in css). */
+export const _diagramDefaultAccent = DEFAULT_ACCENT;

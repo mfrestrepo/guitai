@@ -1,34 +1,29 @@
 /**
- * ChordUi — the "Aprende acordes" module UI.
+ * ChordUi — the "Aprende acordes" module UI (highly visual, minimal text).
  *
- * Screens (inside #view-chords):
- *  1. home: levels with big chord tiles + change drills.
- *  2. lesson: chord card (diagram + how-to + tips) and validation, in two modes:
- *     - "Rasgueo"      → StrumMicSession (spectral check of a sustained strum)
- *     - "Cuerda a cuerda" → ChordMicSession (per-string arpeggio)
+ * Visual model:
+ *  - home: a "learning path" of level blocks; every chord is a card whose own
+ *    little diagram speaks for it; drills are drawn as chord chains.
+ *  - lesson: hero diagram (big), a few fact chips, "how-to" + tips tucked
+ *    behind compact toggles, and two illustrated validation-mode cards.
+ *  - practice: the *diagram itself* lights the current string (sounding/ok/
+ *    wrong) while validation runs; words are reduced to tiny labels.
  *
- * Wording is generated in chords/copy.ts; detection lives in chords/*; this
- * module only renders snapshots. It is the only DOM-touching code here.
+ * Logic untouched: sessions (micSession/strumSession), gates, spectral and
+ * pure helpers all live in src/chords and are only rendered here.
  */
 
 import type { ChordDef, StringNumber } from '../chords/catalog';
-import { chordById, expectedMidi } from '../chords/catalog';
+import { chordById, expectedMidi, expectedNoteName } from '../chords/catalog';
 import { CHORD_LEVELS, CHANGE_DRILLS, type ChangeDrill } from '../chords/curriculum';
 import {
   browserProgressStorage,
-  isChordLearned,
   loadLearnedChordIds,
   markChordLearned,
   type ProgressStorage,
 } from '../chords/progress';
-import {
-  chordHowToLines,
-  describeCheck,
-  expectedPhrase,
-  noteLabelEs,
-  strumIssueLine,
-} from '../chords/copy';
-import { chordDiagramSvg } from './chordDiagram';
+import { chordHowToLines, describeCheck, strumIssueLine } from '../chords/copy';
+import { chordDiagramSvg, type StringState } from './chordDiagram';
 import { ChordMicSession, type ChordSessionSnapshot } from '../chords/micSession';
 import { StrumMicSession, type StrumSessionSnapshot } from '../chords/strumSession';
 import type { PracticeSnapshot, StepState } from '../chords/practice';
@@ -45,17 +40,19 @@ interface ChordElements {
   lessonTitle: HTMLElement;
   lessonContext: HTMLElement;
   lessonProgress: HTMLElement;
-  chordCard: HTMLElement;
   diagram: HTMLElement;
   chordName: HTMLElement;
   chordNotes: HTMLElement;
-  howto: HTMLElement;
+  chordFacts: HTMLElement;
+  howto: HTMLOListElement;
   tips: HTMLDetailsElement;
   tipsBody: HTMLElement;
   modeStrum: HTMLButtonElement;
   modeArpeggio: HTMLButtonElement;
   // arpeggio practice
   practice: HTMLElement;
+  practiceClose: HTMLButtonElement;
+  practiceDiagram: HTMLElement;
   micStatus: HTMLElement;
   micButton: HTMLButtonElement;
   steps: HTMLElement;
@@ -70,6 +67,7 @@ interface ChordElements {
   finishButton: HTMLButtonElement;
   // strum practice
   practiceStrum: HTMLElement;
+  strumClose: HTMLButtonElement;
   strumMicStatus: HTMLElement;
   strumMicButton: HTMLButtonElement;
   strumChordName: HTMLElement;
@@ -99,6 +97,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+const kindLabel = (chord: ChordDef) => (chord.kind === 'major' ? 'mayor' : 'menor');
+
 export class ChordUi {
   private readonly els: ChordElements;
   private readonly storage: ProgressStorage;
@@ -125,16 +125,18 @@ export class ChordUi {
       lessonTitle: mustGet(root, '#chord-lesson-title'),
       lessonContext: mustGet(root, '#chord-lesson-context'),
       lessonProgress: mustGet(root, '#chord-lesson-progress'),
-      chordCard: mustGet(root, '#chord-card'),
       diagram: mustGet(root, '#chord-diagram'),
       chordName: mustGet(root, '#chord-name'),
       chordNotes: mustGet(root, '#chord-notes'),
-      howto: mustGet(root, '#chord-howto'),
+      chordFacts: mustGet(root, '#chord-facts'),
+      howto: mustGet<HTMLOListElement>(root, '#chord-howto'),
       tips: mustGet<HTMLDetailsElement>(root, '#chord-tips'),
       tipsBody: mustGet(root, '#chord-tips-body'),
       modeStrum: mustGet<HTMLButtonElement>(root, '#mode-strum'),
       modeArpeggio: mustGet<HTMLButtonElement>(root, '#mode-arpeggio'),
       practice: mustGet(root, '#practice'),
+      practiceClose: mustGet<HTMLButtonElement>(root, '#practice-close'),
+      practiceDiagram: mustGet(root, '#practice-diagram'),
       micStatus: mustGet(root, '#practice-mic-status'),
       micButton: mustGet<HTMLButtonElement>(root, '#practice-mic-button'),
       steps: mustGet(root, '#practice-steps'),
@@ -148,6 +150,7 @@ export class ChordUi {
       nextButton: mustGet<HTMLButtonElement>(root, '#practice-next'),
       finishButton: mustGet<HTMLButtonElement>(root, '#practice-finish'),
       practiceStrum: mustGet(root, '#practice-strum'),
+      strumClose: mustGet<HTMLButtonElement>(root, '#strum-close'),
       strumMicStatus: mustGet(root, '#strum-mic-status'),
       strumMicButton: mustGet<HTMLButtonElement>(root, '#strum-mic-button'),
       strumChordName: mustGet(root, '#strum-chord-name'),
@@ -161,6 +164,8 @@ export class ChordUi {
     this.els.lessonBack.addEventListener('click', () => this.showHome());
     this.els.modeStrum.addEventListener('click', () => this.startMode('strum'));
     this.els.modeArpeggio.addEventListener('click', () => this.startMode('arpeggio'));
+    this.els.practiceClose.addEventListener('click', () => this.closePractice());
+    this.els.strumClose.addEventListener('click', () => this.closePractice());
     this.els.micButton.addEventListener('click', () => this.toggleArpeggioMic());
     this.els.forceButton.addEventListener('click', () => this.forceCheck());
     this.els.skipButton.addEventListener('click', () => this.session.skipCurrent());
@@ -171,15 +176,12 @@ export class ChordUi {
     this.els.strumNext.addEventListener('click', () => this.advanceLesson());
     this.els.strumFinish.addEventListener('click', () => this.showHome());
 
-    // Sessions emit snapshots immediately, so they need the DOM ready first.
     this.session = new ChordMicSession({ onChange: (s) => this.onArpeggioChange(s) });
     this.strum = new StrumMicSession({ onChange: (s) => this.onStrumChange(s) });
   }
 
-  /** Render the home screen and stop any running practice. */
   showHome(): void {
-    this.session.stop();
-    this.strum.stop();
+    this.closePractice();
     this.currentChord = null;
     this.lessonKind = null;
     this.activeMode = null;
@@ -187,13 +189,23 @@ export class ChordUi {
     this.renderHome();
   }
 
-  /** Stop everything (used when leaving the module tab). */
   deactivate(): void {
     this.session.stop();
     this.strum.stop();
   }
 
-  /* ---------------- mode startup ---------------- */
+  /** Close any open practice panel and go back to the chord card. */
+  private closePractice(): void {
+    this.session.stop();
+    this.strum.stop();
+    this.activeMode = null;
+    this.els.practice.hidden = true;
+    this.els.practiceStrum.hidden = true;
+    this.els.modeStrum.classList.remove('pressed');
+    this.els.modeArpeggio.classList.remove('pressed');
+  }
+
+  /* ---------------- modes ---------------- */
 
   private startMode(mode: PracticeMode): void {
     const chord = this.currentChord;
@@ -217,18 +229,18 @@ export class ChordUi {
   }
 
   private toggleArpeggioMic(): void {
-    const { mic } = this.session.snapshot();
     const chord = this.currentChord;
     if (!chord) return;
+    const { mic } = this.session.snapshot();
     if (mic === 'running' || mic === 'starting') this.session.stop();
     else void this.session.start(chord.id);
-    if (chord && this.activeMode === 'arpeggio') this.renderArpeggioIdle(chord);
+    if (this.activeMode === 'arpeggio') this.renderArpeggioIdle(chord);
   }
 
   private toggleStrumMic(): void {
-    const { mic } = this.strum.snapshot();
     const chord = this.currentChord;
     if (!chord) return;
+    const { mic } = this.strum.snapshot();
     if (mic === 'running' || mic === 'starting') this.strum.stop();
     else void this.strum.start(chord.id);
     if (this.activeMode === 'strum') this.renderStrumIdle(chord);
@@ -236,7 +248,7 @@ export class ChordUi {
 
   private forceCheck(): void {
     const ok = this.session.forceCheckNow();
-    this.forceFailedMessage = ok ? '' : 'No te he oído — toca la cuerda y pulsa de nuevo.';
+    this.forceFailedMessage = ok ? '' : 'No te oí — toca la cuerda y pulsa de nuevo.';
     this.onArpeggioChange(this.session.snapshot());
   }
 
@@ -246,11 +258,8 @@ export class ChordUi {
     this.els.done.hidden = true;
     this.els.feedback.hidden = true;
     this.forceFailedMessage = '';
-    if (this.session.snapshot().mic === 'running') {
-      this.session.changeChord(chord.id);
-    } else {
-      void this.session.start(chord.id);
-    }
+    if (this.session.snapshot().mic === 'running') this.session.changeChord(chord.id);
+    else void this.session.start(chord.id);
     this.onArpeggioChange(this.session.snapshot());
   }
 
@@ -279,48 +288,54 @@ export class ChordUi {
     this.currentChord = chord;
     this.activeMode = null;
     this.setScreen('lesson');
+    this.els.practice.hidden = true;
+    this.els.practiceStrum.hidden = true;
 
     const level = CHORD_LEVELS.findIndex((l) => l.chordIds.includes(id));
     const drill = this.lessonKind?.type === 'drill' ? this.lessonKind.drill : undefined;
-    this.els.lessonTitle.textContent =
-      this.lessonKind?.type === 'drill' ? `Progresión ${drill!.title}` : chord.displayName;
-    this.els.lessonContext.textContent =
-      drill !== undefined
-        ? drill.descriptionEs
-        : `${chord.spanishName} · nivel ${level + 1}`;
+    this.els.lessonTitle.textContent = drill
+      ? drill.title
+      : `${chord.displayName} · ${chord.spanishName}`;
+    this.els.lessonContext.textContent = drill
+      ? 'Suena cada acorde limpio y cambia rápido.'
+      : `Nivel ${level + 1}`;
     this.els.lessonProgress.textContent =
       this.lessonChordIds.length > 1
-        ? `Paso ${this.lessonIndex + 1} de ${this.lessonChordIds.length}`
+        ? `${this.lessonIndex + 1}/${this.lessonChordIds.length}`
         : '';
 
-    // Chord card.
-    this.els.diagram.innerHTML = chordDiagramSvg(chord);
-    this.els.chordName.textContent = `${chord.displayName} · ${chord.spanishName}`;
+    this.els.diagram.innerHTML = chordDiagramSvg(chord, { scale: 1 });
+    this.els.chordName.textContent = chord.displayName;
     this.els.chordNotes.textContent = chordNotesLine(chord);
+    this.renderFacts(chord);
+
     this.els.howto.replaceChildren(
-      ...chordHowToLines(chord).map((line) => {
-        const li = el('li', 'howto-line', line);
-        return li;
-      }),
+      ...chordHowToLines(chord).map((line) => el('li', 'howto-line', line)),
     );
     this.els.tipsBody.replaceChildren(
-      ...(chord.tipsEs ?? []).map((tip) => {
-        const p = el('p', 'tip', `💡 ${tip}`);
-        return p;
-      }),
+      ...(chord.tipsEs ?? []).map((tip) => el('p', 'tip', `💡 ${tip}`)),
     );
     this.els.tips.open = false;
 
-    // Panels closed until a mode is chosen.
-    this.els.practice.hidden = true;
-    this.els.practiceStrum.hidden = true;
-    this.els.modeStrum.classList.remove('pressed');
-    this.els.modeArpeggio.classList.remove('pressed');
     this.els.done.hidden = true;
     this.els.nextButton.hidden = true;
     this.els.strumNext.hidden = true;
+    this.renderHome();
+  }
 
-    this.renderHome(); // keep progress badges fresh
+  private renderFacts(chord: ChordDef): void {
+    const sounding = chord.strings.filter((s) => s.fret !== null).length;
+    const muted = chord.strings.length - sounding;
+    const maxFret = Math.max(0, ...chord.strings.map((s) => s.fret ?? 0));
+    const items = [
+      kindLabel(chord),
+      `${sounding} suenan`,
+      muted > 0 ? `${muted} muda${muted > 1 ? 's' : ''}` : 'todas suenan',
+      maxFret > 0 ? `traste ${maxFret}` : '',
+    ]
+      .filter(Boolean)
+      .map((text) => el('span', 'fact-chip', text));
+    this.els.chordFacts.replaceChildren(...items);
   }
 
   /* ---------------- arpeggio rendering ---------------- */
@@ -334,46 +349,46 @@ export class ChordUi {
   }
 
   private renderMicBar(snapshot: ChordSessionSnapshot): void {
-    const mic = snapshot.mic;
     const button = this.els.micButton;
-    switch (mic) {
+    switch (snapshot.mic) {
       case 'idle':
-        this.els.micStatus.textContent = 'Micrófono apagado.';
-        button.textContent = 'Iniciar micrófono';
+        this.els.micStatus.textContent = '';
+        button.textContent = 'Iniciar';
         button.disabled = false;
         break;
       case 'starting':
-        this.els.micStatus.textContent = 'Pidiendo acceso…';
-        button.textContent = 'Iniciando…';
+        this.els.micStatus.textContent = '';
+        button.textContent = '…';
         button.disabled = true;
         break;
       case 'error':
-        this.els.micStatus.textContent = snapshot.errorMessage ?? 'Error con el micrófono.';
-        button.textContent = 'Iniciar micrófono';
+        this.els.micStatus.textContent = snapshot.errorMessage ?? '';
+        button.textContent = 'Iniciar';
         button.disabled = false;
         break;
       case 'running':
-        this.els.micStatus.textContent = 'Te escucho — toca la cuerda indicada.';
-        button.textContent = 'Detener';
+        this.els.micStatus.textContent = 'Te escucho';
+        button.textContent = 'Parar';
         button.disabled = false;
         break;
     }
   }
 
   private renderArpeggioIdle(chord: ChordDef): void {
-    const strings = chordStepStrings(chord);
-    this.renderStepChips(strings.map((n) => ({ stringNumber: n, status: 'pending' as const })));
-    this.els.prompt.textContent = 'Escucha la primera cuerda…';
+    this.renderPracticeDiagram(chord, {});
+    this.els.prompt.textContent = 'Inicia y toca la cuerda marcada.';
     this.els.feedback.hidden = true;
     this.els.done.hidden = true;
     this.els.forceButton.hidden = true;
     this.els.skipButton.hidden = true;
     this.forceFailedMessage = '';
+    this.els.steps.replaceChildren();
   }
 
   private renderArpeggio(snapshot: ChordSessionSnapshot, practice: PracticeSnapshot): void {
     const chord = this.currentChord!;
     this.renderStepChips(practice.steps);
+    this.renderPracticeDiagram(chord, diagramStatesFrom(practice));
 
     if (practice.phase === 'complete') {
       this.renderArpeggioDone(practice, chord);
@@ -387,7 +402,8 @@ export class ChordUi {
 
     const target = practice.steps[practice.activeIndex];
     if (target) {
-      this.els.prompt.textContent = `${expectedPhrase(chord, target.stringNumber)} Silencia entre cuerda y cuerda.`;
+      const note = expectedNoteName(chord, target.stringNumber);
+      this.els.prompt.textContent = `${target.stringNumber}ª → ${note ?? '—'}`;
     }
 
     if (practice.lastCheck) {
@@ -413,18 +429,15 @@ export class ChordUi {
     if (practice.mastered) {
       markChordLearned(this.storage, chord.id);
       this.renderHome();
-      this.els.doneText.textContent =
-        this.lessonChordIds.length > 1
-          ? `🎉 ¡${chord.displayName}! (${this.lessonIndex + 1}/${this.lessonChordIds.length})`
-          : `🎉 ¡${chord.displayName} dominado!`;
+      this.els.doneText.textContent = `🎉 ${chord.displayName}`;
       const hasNext = this.lessonIndex + 1 < this.lessonChordIds.length;
       this.els.nextButton.hidden = !hasNext;
       if (hasNext) {
         const next = chordById(this.lessonChordIds[this.lessonIndex + 1]);
-        this.els.nextButton.textContent = `Siguiente: ${next?.displayName ?? ''} →`;
+        this.els.nextButton.textContent = `Siguiente: ${next?.displayName ?? ''}`;
       }
     } else {
-      this.els.doneText.textContent = 'Terminaste, pero saltaste alguna cuerda. Repite para dominarlo.';
+      this.els.doneText.textContent = 'Faltaron cuerdas. Repite para dominarlo.';
       this.els.nextButton.hidden = true;
     }
   }
@@ -433,15 +446,24 @@ export class ChordUi {
     const chord = this.currentChord;
     this.els.steps.replaceChildren(
       ...steps.map((step) => {
-        const midi = chord ? expectedMidi(chord, step.stringNumber) : null;
+        const note = chord ? expectedNoteName(chord, step.stringNumber) : null;
         const chip = el('div', `step-chip ${step.status}`);
-        const num = el('span', 'step-num', `${step.stringNumber}ª`);
-        const note = el('span', 'step-note', midi !== null ? noteLabelEs(midi) : '—');
-        const mark = el('span', 'step-mark', stepMark(step.status));
-        chip.append(num, note, mark);
+        chip.textContent = `${step.stringNumber} · ${note ?? ''}`;
+        chip.title = step.status;
         return chip;
       }),
     );
+  }
+
+  /** Light the diagram strings according to the practice state. */
+  private renderPracticeDiagram(
+    chord: ChordDef,
+    states: Partial<Record<StringNumber, StringState>>,
+  ): void {
+    this.els.practiceDiagram.innerHTML = chordDiagramSvg(chord, {
+      highlight: states,
+      scale: 0.85,
+    });
   }
 
   /* ---------------- strum rendering ---------------- */
@@ -458,23 +480,23 @@ export class ChordUi {
     const button = this.els.strumMicButton;
     switch (snapshot.mic) {
       case 'idle':
-        this.els.strumMicStatus.textContent = 'Micrófono apagado.';
-        button.textContent = 'Iniciar micrófono';
+        this.els.strumMicStatus.textContent = '';
+        button.textContent = 'Iniciar';
         button.disabled = false;
         break;
       case 'starting':
-        this.els.strumMicStatus.textContent = 'Pidiendo acceso…';
-        button.textContent = 'Iniciando…';
+        this.els.strumMicStatus.textContent = '';
+        button.textContent = '…';
         button.disabled = true;
         break;
       case 'error':
-        this.els.strumMicStatus.textContent = snapshot.errorMessage ?? 'Error con el micrófono.';
-        button.textContent = 'Iniciar micrófono';
+        this.els.strumMicStatus.textContent = snapshot.errorMessage ?? '';
+        button.textContent = 'Iniciar';
         button.disabled = false;
         break;
       case 'running':
-        this.els.strumMicStatus.textContent = 'Rasguea y mantenlo unos segundos…';
-        button.textContent = 'Detener';
+        this.els.strumMicStatus.textContent = 'Escuchando';
+        button.textContent = 'Parar';
         button.disabled = false;
         break;
     }
@@ -482,7 +504,7 @@ export class ChordUi {
 
   private renderStrumIdle(chord: ChordDef): void {
     this.els.strumChordName.textContent = chord.displayName;
-    this.els.strumVerdict.textContent = 'Rasguea el acorde y mantenlo unos segundos…';
+    this.els.strumVerdict.textContent = 'Rasguea y mantenlo…';
     this.els.strumVerdict.dataset.state = 'idle';
     this.els.strumIssues.replaceChildren();
     this.renderStrumLights(null);
@@ -495,65 +517,48 @@ export class ChordUi {
     this.els.strumChordName.textContent = chord.displayName;
 
     if (snapshot.mic !== 'running') {
-      this.els.strumVerdict.textContent = 'Rasguea el acorde y mantenlo unos segundos…';
-      this.els.strumVerdict.dataset.state = 'idle';
-      this.els.strumIssues.replaceChildren();
-      this.els.strumNext.hidden = true;
-      this.renderStrumLights(null);
+      this.renderStrumIdle(chord);
       return;
     }
 
-    // Live string lights always reflect the latest analysis.
     this.renderStrumLights(snapshot.analysis);
 
     if (snapshot.stage === 'listening') {
       const analyzing = snapshot.analysis !== null && snapshot.analysis.verdict !== 'quiet';
-      verdictEl.textContent = analyzing
-        ? 'Escuchando… un momento.'
-        : 'Rasguea el acorde y mantenlo unos segundos…';
+      verdictEl.textContent = analyzing ? '…' : 'Rasguea y mantenlo…';
       verdictEl.dataset.state = 'idle';
       this.els.strumIssues.replaceChildren();
       this.els.strumNext.hidden = true;
       return;
     }
 
-    // A readable, held verdict is on screen.
     if (snapshot.verdict === 'correct') {
-      verdictEl.textContent = `¡Bien! Suena a ${chord.displayName}`;
+      verdictEl.textContent = `✓ ${chord.displayName}`;
       verdictEl.dataset.state = 'success';
       this.els.strumIssues.replaceChildren();
       const hasNext = this.lessonIndex + 1 < this.lessonChordIds.length;
       this.els.strumNext.hidden = !hasNext;
       if (hasNext) {
         const next = chordById(this.lessonChordIds[this.lessonIndex + 1]);
-        this.els.strumNext.textContent = `Siguiente: ${next?.displayName ?? ''} →`;
+        this.els.strumNext.textContent = `Siguiente: ${next?.displayName ?? ''}`;
       }
-      // Only count it as learned once the clean strum has been held a moment.
       if (snapshot.stableMs >= 1200 && !this.strumLearnedMarked.has(chord.id)) {
         this.strumLearnedMarked.add(chord.id);
         markChordLearned(this.storage, chord.id);
-        verdictEl.textContent += ' ✓ aprendido';
         this.renderHome();
       }
       return;
     }
 
-    // issues verdict
-    verdictEl.textContent = 'Casi… revisa esto:';
+    verdictEl.textContent = `Casi ${chord.displayName}`;
     verdictEl.dataset.state = 'warning';
     this.els.strumNext.hidden = true;
     const lines = snapshot.issues.map((issue) =>
       strumIssueLine(issue.kind, issue.noteLabel, issue.stringNumber),
     );
-    this.els.strumIssues.replaceChildren(
-      ...lines.map((line) => {
-        const li = el('li', 'strum-issue', line);
-        return li;
-      }),
-    );
+    this.els.strumIssues.replaceChildren(...lines.map((line) => el('li', 'strum-issue', line)));
   }
 
-  /** Six light dots: one per string, colored by the latest detected state. */
   private renderStrumLights(analysis: StrumCheckResult | null): void {
     const chord = this.currentChord;
     if (!chord || !analysis) {
@@ -580,58 +585,75 @@ export class ChordUi {
     this.els.strumLights.replaceChildren(...lights);
   }
 
-  /* ---------------- home screen ---------------- */
+  /* ---------------- home ---------------- */
 
   private renderHome(): void {
     const allIds = curriculumChordIdsAll();
     const learned = loadLearnedChordIds(this.storage);
     const done = allIds.filter((id) => learned.has(id)).length;
-    this.els.progressHome.textContent = `Progreso: ${done} de ${allIds.length} acordes dominados`;
+    this.els.progressHome.innerHTML =
+      progressRing(done / allIds.length) +
+      `<span class="progress-text">${done}/${allIds.length}</span>`;
     this.els.progressHome.dataset.done = String(done === allIds.length);
 
-    this.els.levels.replaceChildren(
-      ...CHORD_LEVELS.map((level, levelIndex) => {
-        const card = el('section', 'level-card');
-        card.appendChild(el('h3', 'level-title', level.title));
-        card.appendChild(el('p', 'level-desc', level.description));
+    const blocks: HTMLElement[] = [];
+    CHORD_LEVELS.forEach((level, levelIndex) => {
+      const block = el('section', 'level-block');
+      const head = el('div', 'level-head');
+      head.appendChild(el('span', 'level-badge', String(levelIndex + 1)));
+      const titles = el('div', 'level-head-text');
+      titles.appendChild(el('h2', 'level-title', level.title.replace(/^Nivel \d · /, '')));
+      head.appendChild(titles);
+      head.appendChild(el('span', 'level-count', `${level.chordIds.length} acordes`));
+      block.appendChild(head);
 
-        const chips = el('div', 'level-chords');
-        for (const chordId of level.chordIds) {
-          const chord = chordById(chordId);
-          if (!chord) continue;
-          const learnedFlag = isChordLearned(this.storage, chord.id);
-          const button = el('button', 'chord-tile');
-          button.type = 'button';
-          button.dataset.learned = String(learnedFlag);
-          const main = el('span', 'chord-tile-main', chord.displayName);
-          const sub = el('span', 'chord-tile-sub', learnedFlag ? `${chord.spanishName} ✓` : chord.spanishName);
-          button.append(main, sub);
-          button.addEventListener('click', () =>
-            this.startLesson([chord.id], { type: 'chord', levelIndex }),
+      const grid = el('div', 'chord-grid');
+      for (const chordId of level.chordIds) {
+        const chord = chordById(chordId);
+        if (!chord) continue;
+        const learnedFlag = learned.has(chord.id);
+        const card = el('button', 'chord-card-mini');
+        card.type = 'button';
+        card.dataset.learned = String(learnedFlag);
+        card.dataset.level = String(levelIndex + 1);
+        const dia = el('div', 'chord-mini');
+        dia.innerHTML = chordDiagramSvg(chord, { scale: 0.42, showNut: true });
+        const name = el('span', 'chord-card-name', chord.displayName);
+        const sub = el('span', 'chord-card-sub', kindLabel(chord));
+        card.append(dia, name, sub);
+        if (learnedFlag) card.appendChild(el('span', 'chord-card-check', '✓'));
+        card.addEventListener('click', () =>
+          this.startLesson([chord.id], { type: 'chord', levelIndex }),
+        );
+        grid.appendChild(card);
+      }
+      block.appendChild(grid);
+
+      const drills = level.drillIds
+        .map((id) => CHANGE_DRILLS.find((d) => d.id === id))
+        .filter((d): d is ChangeDrill => d !== undefined);
+      if (drills.length > 0) {
+        const drillRow = el('div', 'drill-row');
+        for (const drill of drills) {
+          const chip = el('button', 'drill-chip');
+          chip.type = 'button';
+          chip.title = drill.descriptionEs;
+          chip.innerHTML = drill.chordIds
+            .map(
+              (cid) =>
+                `<span class="drill-chord">${chordById(cid)?.displayName ?? cid}</span>`,
+            )
+            .join('<span class="drill-arrow">→</span>');
+          chip.addEventListener('click', () =>
+            this.startLesson(drill.chordIds, { type: 'drill', drill }),
           );
-          chips.appendChild(button);
+          drillRow.appendChild(chip);
         }
-        card.appendChild(chips);
-
-        const drills = level.drillIds
-          .map((id) => CHANGE_DRILLS.find((d) => d.id === id))
-          .filter((d): d is ChangeDrill => d !== undefined);
-        if (drills.length > 0) {
-          const drillRow = el('div', 'level-drills');
-          for (const drill of drills) {
-            const button = el('button', 'drill-chip', `🔄 ${drill.title}`);
-            button.type = 'button';
-            button.title = drill.descriptionEs;
-            button.addEventListener('click', () =>
-              this.startLesson(drill.chordIds, { type: 'drill', drill }),
-            );
-            drillRow.appendChild(button);
-          }
-          card.appendChild(drillRow);
-        }
-        return card;
-      }),
-    );
+        block.appendChild(drillRow);
+      }
+      blocks.push(block);
+    });
+    this.els.levels.replaceChildren(...blocks);
   }
 
   private setScreen(screen: 'home' | 'lesson'): void {
@@ -640,33 +662,43 @@ export class ChordUi {
   }
 }
 
-function stepMark(status: StepState['status']): string {
-  switch (status) {
-    case 'ok':
-      return '✓';
-    case 'wrong':
-      return '✗';
-    case 'almost':
-      return '~';
-    case 'skipped':
-      return '→';
-    default:
-      return '';
-  }
-}
+/* ---------------- pure helpers ---------------- */
 
 function chordNotesLine(chord: ChordDef): string {
   const notes: string[] = [];
   for (const string of chord.strings) {
-    const midi = expectedMidi(chord, string.number);
-    if (midi === null) continue;
-    notes.push(noteLabelEs(midi));
+    if (expectedMidi(chord, string.number) === null) continue;
+    notes.push(expectedNoteName(chord, string.number) ?? '—');
   }
   return notes.join(' · ');
 }
 
-function chordStepStrings(chord: ChordDef): readonly StringNumber[] {
-  return chord.strings.filter((s) => s.fret !== null).map((s) => s.number);
+function diagramStatesFrom(practice: PracticeSnapshot): Partial<Record<StringNumber, StringState>> {
+  const chord = chordById(practice.chordId)!;
+  const states: Partial<Record<StringNumber, StringState>> = {};
+  practice.steps.forEach((step, i) => {
+    if (step.status === 'ok') states[step.stringNumber] = 'ok';
+    else if (step.status === 'wrong' || step.status === 'almost')
+      states[step.stringNumber] = 'wrong';
+    else if (i === practice.activeIndex) states[step.stringNumber] = 'sounding';
+  });
+  void chord;
+  return states;
+}
+
+/** SVG circular progress ring with the fraction filled. */
+function progressRing(fraction: number): string {
+  const size = 54;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const filled = Math.max(0, Math.min(1, fraction)) * c;
+  const color = fraction >= 1 ? '#34d399' : '#22d3ee';
+  return `<svg class="progress-ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Progreso">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-track"/>
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-fill" stroke="${color}"
+      stroke-dasharray="${filled} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+  </svg>`;
 }
 
 function curriculumChordIdsAll(): readonly string[] {

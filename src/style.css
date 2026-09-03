@@ -1072,3 +1072,518 @@ details.chord-tips summary:hover {
   justify-content: center;
   margin-top: 14px;
 }
+
+/* ==========================================================================
+   Chord diagrams (SVG) — colors driven by CSS so states can light strings
+   ========================================================================== */
+.chord-diagram svg,
+.chord-mini svg,
+.practice-diagram svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.cd-nut { fill: #3a4a5e; }
+.cd-fret, .cd-string { stroke: #3a4a5e; stroke-width: 1.5; }
+.cd-string-label { fill: #8ea0b5; font-family: system-ui; }
+
+.cd-dot {
+  fill: #22d3ee;
+  transition: fill 0.25s ease;
+}
+.cd-ring {
+  fill: none;
+  stroke: #8ea0b5;
+  stroke-width: 1.6;
+  transition: stroke 0.25s ease;
+}
+.cd-mute {
+  fill: #f87171;
+  font-family: system-ui;
+}
+.cd-finger {
+  fill: #06121a;
+  font-family: system-ui;
+}
+
+.cd-dot.cd-ok { fill: #34d399; }
+.cd-dot.cd-wrong { fill: #f87171; }
+.cd-dot.cd-sounding {
+  fill: #a5f3fc;
+  filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9));
+}
+
+.cd-ring.cd-ok { stroke: #34d399; }
+.cd-ring.cd-wrong { stroke: #f87171; }
+.cd-ring.cd-sounding {
+  stroke: #a5f3fc;
+  filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.9));
+}
+.cd-mute.cd-ok { fill: #34d399; }
+.cd-mute.cd-wrong { fill: #f87171; }
+
+/* ==========================================================================
+   Chord module v3 — "camino visual" (less text, more picture)
+   ========================================================================== */
+.chords-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.chords-title {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.chords-tagline {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.chords-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.progress-text {
+  font-size: 0.95rem;
+}
+
+.ring-track {
+  fill: none;
+  stroke: #243140;
+  stroke-width: 6;
+}
+.ring-fill {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease;
+}
+
+.level-block {
+  margin-bottom: 22px;
+}
+
+.level-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.level-badge {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-weight: 800;
+  color: #06121a;
+  background: linear-gradient(180deg, #67e8f9, #22d3ee);
+  flex: none;
+}
+
+.level-head-text .level-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.level-count {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.chord-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.chord-card-mini {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+.chord-card-mini:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.chord-mini {
+  display: flex;
+  justify-content: center;
+}
+
+.chord-card-name {
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.chord-card-sub {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.chord-card-check {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: var(--green);
+  font-weight: 900;
+}
+
+.chord-card-mini[data-learned='true'] {
+  border-color: rgba(52, 211, 153, 0.6);
+}
+
+.drill-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.drill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 999px;
+  color: #ffe4a3;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.drill-chip:hover {
+  border-color: #fbbf24;
+  transform: translateY(-1px);
+}
+
+.drill-chord {
+  display: inline-block;
+  min-width: 2ch;
+  text-align: center;
+}
+
+.drill-arrow {
+  color: #fbbf24;
+  opacity: 0.8;
+}
+
+/* ---------- lesson layout ---------- */
+.lesson-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 14px;
+  flex-wrap: wrap;
+}
+
+.back-btn {
+  font-size: 1.2rem;
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.lesson-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.lesson-context {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.lesson-top-spacer {
+  flex: 1;
+}
+
+.lesson-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .lesson-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hero-panel {
+  text-align: center;
+}
+
+.hero-panel .chord-diagram svg {
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.hero-name {
+  font-size: clamp(2.6rem, 10vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 4px;
+  color: var(--accent);
+  text-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
+}
+
+.chord-notes {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.chord-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.fact-chip {
+  background: var(--bg-elev);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+details.chord-details {
+  border: 1px solid var(--card-border);
+  background: var(--bg-elev);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+details.chord-details summary {
+  cursor: pointer;
+  padding: 11px 14px;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+details.chord-details summary::-webkit-details-marker {
+  display: none;
+}
+
+details.chord-details summary::after {
+  content: '＋';
+  margin-left: auto;
+  color: var(--text-dim);
+}
+
+details.chord-details[open] summary::after {
+  content: '－';
+}
+
+details.chord-details .chord-howto,
+details.chord-details #chord-tips-body {
+  padding: 0 14px 12px;
+  margin: 0;
+}
+
+details.chord-details .chord-howto {
+  padding-left: 30px;
+}
+
+details.chord-details .tip {
+  margin: 6px 0 0;
+}
+
+.mode-title {
+  margin: 16px 0 8px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+
+.mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .mode-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn-mode .mode-emoji {
+  font-size: 1.9rem;
+}
+
+.btn-mode .mode-label {
+  font-weight: 800;
+  font-size: 1.02rem;
+}
+
+.btn-mode .mode-sub {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.mode-row .pressed {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* ---------- practice panels ---------- */
+.practice-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.practice-mode-tag {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.practice-mic-status {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.practice-stage {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+
+.practice-diagram svg {
+  height: auto;
+  max-width: 380px;
+}
+
+.practice-prompt {
+  font-size: clamp(1.6rem, 6vw, 2.4rem);
+  font-weight: 900;
+  color: var(--text);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.practice-steps {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0 12px;
+}
+
+.step-chip {
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--card-border);
+  background: var(--bg-elev);
+  color: var(--text-dim);
+  transition: all 0.2s ease;
+}
+
+.step-chip.ok {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.step-chip.wrong {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.step-chip.almost {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.step-chip.skipped {
+  opacity: 0.5;
+}
+
+/* Pulso sutil mientras se escucha (rasgueo) */
+@keyframes guitai-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.strum-verdict[data-state='idle'] {
+  animation: guitai-pulse 1.4s ease-in-out infinite;
+}
+.strum-verdict[data-state='success'] {
+  animation: none;
+}
