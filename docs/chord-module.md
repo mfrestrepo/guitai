@@ -71,6 +71,8 @@ It checks, per frame (~370 ms window, updated ~10×/s):
    the chord's pitch classes up to ~400 Hz (verified empirically), so an
    out-of-chord peak down there is genuinely wrong.
 
+Readability: raw frames flicker, so results pass through a verdict gate (`chords/strumGate.ts`) that only publishes a verdict after ~1–2 s of consistent sound and holds it on screen a few seconds — the UI never flips faster than a human can read. The microphone session is `strumSession.ts`.
+
 Honest limits (validated in `strumCheck.test.ts`): the low open E's own 2nd
 harmonic sits *exactly* on E3, so in E-family chords a mis-fretted E3 string is
 masked — the app then reports the foreign note (F) instead of "string 4 is

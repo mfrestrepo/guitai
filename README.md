@@ -91,8 +91,7 @@ that should sound, and **two ways to validate**:
 1. **🎸 Rasgueo** (the friendly default) — strum the chord and hold it: the app
    runs a spectral analysis and answers immediately with a big *"¡Bien! Suena
    a Em"*, or tells you concisely what to fix (a string that does not sound,
-   one that should be muted and rings, or a foreign note). Clean strums twice
-   in a row mark the chord as learned.
+   one that should be muted and rings, or a foreign note). A clean strum held for a moment marks the chord as learned.
 2. **🎵 Cuerda a cuerda** — the precise mode: the app asks for each string in
    order and validates with the tuner-grade YIN detector, e.g. *"Suena Mi
    (E3), pero la 5ª cuerda debe sonar Si (B2). Parece que tocaste la 4ª

@@ -450,7 +450,7 @@ export class ChordUi {
     if (this.activeMode !== 'strum') return;
     this.renderStrumMic(snapshot);
     const chord = this.currentChord;
-    if (!chord || snapshot.result === null) return;
+    if (!chord) return;
     this.renderStrumResult(chord, snapshot);
   }
 
@@ -473,7 +473,7 @@ export class ChordUi {
         button.disabled = false;
         break;
       case 'running':
-        this.els.strumMicStatus.textContent = 'Rasguea y deja sonar el acorde…';
+        this.els.strumMicStatus.textContent = 'Rasguea y mantenlo unos segundos…';
         button.textContent = 'Detener';
         button.disabled = false;
         break;
@@ -482,42 +482,54 @@ export class ChordUi {
 
   private renderStrumIdle(chord: ChordDef): void {
     this.els.strumChordName.textContent = chord.displayName;
-    this.els.strumVerdict.textContent = 'Rasguea el acorde y déjalo sonar…';
+    this.els.strumVerdict.textContent = 'Rasguea el acorde y mantenlo unos segundos…';
     this.els.strumVerdict.dataset.state = 'idle';
     this.els.strumIssues.replaceChildren();
-    this.renderStrumLights([]);
+    this.renderStrumLights(null);
     this.els.strumNext.hidden = true;
     this.strumLearnedMarked.delete(chord.id);
   }
 
   private renderStrumResult(chord: ChordDef, snapshot: StrumSessionSnapshot): void {
-    const result = snapshot.result!;
     const verdictEl = this.els.strumVerdict;
     this.els.strumChordName.textContent = chord.displayName;
 
-    if (result.verdict === 'quiet') {
-      verdictEl.textContent = 'Rasguea el acorde y déjalo sonar…';
+    if (snapshot.mic !== 'running') {
+      this.els.strumVerdict.textContent = 'Rasguea el acorde y mantenlo unos segundos…';
+      this.els.strumVerdict.dataset.state = 'idle';
+      this.els.strumIssues.replaceChildren();
+      this.els.strumNext.hidden = true;
+      this.renderStrumLights(null);
+      return;
+    }
+
+    // Live string lights always reflect the latest analysis.
+    this.renderStrumLights(snapshot.analysis);
+
+    if (snapshot.stage === 'listening') {
+      const analyzing = snapshot.analysis !== null && snapshot.analysis.verdict !== 'quiet';
+      verdictEl.textContent = analyzing
+        ? 'Escuchando… un momento.'
+        : 'Rasguea el acorde y mantenlo unos segundos…';
       verdictEl.dataset.state = 'idle';
       this.els.strumIssues.replaceChildren();
-      this.renderStrumLights([]);
       this.els.strumNext.hidden = true;
       return;
     }
 
-    if (result.verdict === 'correct') {
+    // A readable, held verdict is on screen.
+    if (snapshot.verdict === 'correct') {
       verdictEl.textContent = `¡Bien! Suena a ${chord.displayName}`;
       verdictEl.dataset.state = 'success';
       this.els.strumIssues.replaceChildren();
-      this.renderStrumLights(result);
-
-      // Two consecutive clean strums → mark as learned.
       const hasNext = this.lessonIndex + 1 < this.lessonChordIds.length;
       this.els.strumNext.hidden = !hasNext;
       if (hasNext) {
         const next = chordById(this.lessonChordIds[this.lessonIndex + 1]);
         this.els.strumNext.textContent = `Siguiente: ${next?.displayName ?? ''} →`;
       }
-      if (snapshot.correctStreak >= 2 && !this.strumLearnedMarked.has(chord.id)) {
+      // Only count it as learned once the clean strum has been held a moment.
+      if (snapshot.stableMs >= 1200 && !this.strumLearnedMarked.has(chord.id)) {
         this.strumLearnedMarked.add(chord.id);
         markChordLearned(this.storage, chord.id);
         verdictEl.textContent += ' ✓ aprendido';
@@ -526,11 +538,11 @@ export class ChordUi {
       return;
     }
 
-    // issues
+    // issues verdict
     verdictEl.textContent = 'Casi… revisa esto:';
     verdictEl.dataset.state = 'warning';
     this.els.strumNext.hidden = true;
-    const lines = result.issues.map((issue) =>
+    const lines = snapshot.issues.map((issue) =>
       strumIssueLine(issue.kind, issue.noteLabel, issue.stringNumber),
     );
     this.els.strumIssues.replaceChildren(
@@ -539,26 +551,31 @@ export class ChordUi {
         return li;
       }),
     );
-    this.renderStrumLights(result);
   }
 
-  /** Six light dots: one per string, colored by its detected state. */
-  private renderStrumLights(result: StrumCheckResult | []): void {
+  /** Six light dots: one per string, colored by the latest detected state. */
+  private renderStrumLights(analysis: StrumCheckResult | null): void {
     const chord = this.currentChord;
+    if (!chord || !analysis) {
+      this.els.strumLights.replaceChildren();
+      return;
+    }
     const lights: HTMLElement[] = [];
-    if (chord && result instanceof Object && 'scores' in result) {
-      const scores = (result as StrumCheckResult).scores;
-      for (const score of scores) {
-        const band = chord.strings.find((s) => s.number === score.stringNumber)!;
-        const light = el('div', `strum-light string-${score.stringNumber}`);
-        const cls = band.fret === null
-          ? (score.ringing ? 'bad' : 'muted')
-          : (score.ringing ? 'on' : 'off');
-        light.classList.add(cls);
-        light.style.setProperty('--level', String(Math.max(0.15, Math.min(1, score.score))));
-        light.title = `${score.stringNumber}ª ${score.expectedLabel ?? ''}`;
-        lights.push(light);
-      }
+    for (const score of analysis.scores) {
+      const band = chord.strings.find((s) => s.number === score.stringNumber)!;
+      const light = el('div', `strum-light string-${score.stringNumber}`);
+      const cls =
+        band.fret === null
+          ? score.ringing
+            ? 'bad'
+            : 'muted'
+          : score.ringing
+            ? 'on'
+            : 'off';
+      light.classList.add(cls);
+      light.style.setProperty('--level', String(Math.max(0.15, Math.min(1, score.score))));
+      light.title = `${score.stringNumber}ª ${score.expectedLabel ?? ''}`;
+      lights.push(light);
     }
     this.els.strumLights.replaceChildren(...lights);
   }

@@ -1,15 +1,17 @@
 /**
  * StrumMicSession — microphone plumbing for the sustained-strum (rasgueo) mode.
  *
- * Reads the newest STRUM_FRAME_SIZE samples on a slow cadence (~10 Hz — the
- * frame already covers ~370 ms of audio) and runs {@link analyzeStrum} on
- * every frame, emitting a snapshot the UI can render live while the learner
- * holds the strum. Like the per-string session, all decisions live in pure
- * modules; this class only owns the mic and the loop.
+ * Reads the newest STRUM_FRAME_SIZE samples at ~10 Hz (the frame covers ~370 ms
+ * of audio) and runs {@link analyzeStrum} on every frame. Raw frames flicker,
+ * so the results are fed into a {@link StrumGate}, which only *publishes* a
+ * verdict after ~1–2 s of consistent sound and then holds it on screen for a
+ * readable amount of time. This class owns the mic + loop only; the gate and
+ * the spectral analysis are pure and unit tested.
  */
 
 import { openMicrophoneInput, describeMicrophoneError, type AudioInputHandle } from '../audio/input';
-import { analyzeStrum, STRUM_FRAME_SIZE, type StrumCheckResult } from './strumCheck';
+import { analyzeStrum, STRUM_FRAME_SIZE, type StrumCheckResult, type StrumIssue } from './strumCheck';
+import { StrumGate, type StrumFrameVerdict } from './strumGate';
 import { chordById, type ChordDef } from './catalog';
 
 export type StrumMicPhase = 'idle' | 'starting' | 'running' | 'error';
@@ -18,10 +20,14 @@ export interface StrumSessionSnapshot {
   readonly mic: StrumMicPhase;
   readonly errorMessage?: string;
   readonly chordId: string | null;
-  /** Latest spectral check (updated ~10×/s while the mic is running). */
-  readonly result: StrumCheckResult | null;
-  /** Consecutive "correct" verdicts so far (used for the mastery badge). */
-  readonly correctStreak: number;
+  /** 'verdict' while a readable verdict is on screen, else 'listening'. */
+  readonly stage: 'listening' | 'verdict';
+  readonly verdict: 'correct' | 'issues' | null;
+  readonly issues: readonly StrumIssue[];
+  /** How long the current verdict has been on screen (ms). */
+  readonly stableMs: number;
+  /** Latest raw analysis (only used for the string lights). */
+  readonly analysis: StrumCheckResult | null;
 }
 
 export interface StrumSessionCallbacks {
@@ -30,6 +36,7 @@ export interface StrumSessionCallbacks {
 
 export class StrumMicSession {
   private readonly callbacks: StrumSessionCallbacks;
+  private readonly gate = new StrumGate();
 
   private input: AudioInputHandle | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -38,8 +45,7 @@ export class StrumMicSession {
   private mic: StrumMicPhase = 'idle';
   private errorMessage: string | undefined;
   private chord: ChordDef | null = null;
-  private result: StrumCheckResult | null = null;
-  private correctStreak = 0;
+  private analysis: StrumCheckResult | null = null;
 
   constructor(callbacks: StrumSessionCallbacks) {
     this.callbacks = callbacks;
@@ -62,15 +68,15 @@ export class StrumMicSession {
       this.input = await openMicrophoneInput({ fftSize: STRUM_FRAME_SIZE });
       this.frame = new Float32Array(this.input.analyser.fftSize);
       this.chord = chord;
-      this.result = null;
-      this.correctStreak = 0;
+      this.gate.reset();
+      this.analysis = null;
       this.mic = 'running';
       this.emit();
       this.timer = setInterval(() => this.tick(), 100);
     } catch (error) {
       this.input = null;
       this.chord = null;
-      this.result = null;
+      this.analysis = null;
       this.mic = 'error';
       this.errorMessage = describeMicrophoneError(error);
       this.emit();
@@ -85,35 +91,63 @@ export class StrumMicSession {
     this.input?.stop();
     this.input = null;
     this.chord = null;
-    this.result = null;
-    this.correctStreak = 0;
+    this.analysis = null;
+    this.gate.reset();
     this.mic = 'idle';
     this.errorMessage = undefined;
     this.emit();
   }
 
+  /** Analyze one raw frame (also usable by tests with synthetic audio). */
+  feedFrame(frame: Float32Array, sampleRate: number, nowMs = Date.now()): void {
+    if (this.chord === null) return;
+    this.analysis = analyzeStrum(this.chord, frame, sampleRate);
+
+    const verdict: StrumFrameVerdict =
+      this.analysis.verdict === 'quiet'
+        ? 'quiet'
+        : this.analysis.verdict === 'correct'
+          ? 'correct'
+          : 'issues';
+
+    const event = this.gate.push({
+      verdict,
+      issues: verdict === 'issues' ? this.analysis.issues : [],
+      nowMs,
+    });
+    if (event) this.emit();
+  }
+
+  /**
+   * Attach a chord WITHOUT opening the microphone (test hook): after this,
+   * `feedFrame` can be driven with synthetic frames.
+   */
+  beginSession(chordId: string): boolean {
+    if (this.mic === 'running' || this.mic === 'starting') return false;
+    const chord = chordById(chordId);
+    if (!chord) return false;
+    this.chord = chord;
+    this.gate.reset();
+    this.analysis = null;
+    return true;
+  }
+
   snapshot(): StrumSessionSnapshot {
+    const state = this.gate.state();
+    const now = Date.now();
     return {
       mic: this.mic,
       errorMessage: this.errorMessage,
       chordId: this.chord?.id ?? null,
-      result: this.result,
-      correctStreak: this.correctStreak,
+      stage: state.stage,
+      verdict: state.verdict,
+      issues: state.issues,
+      stableMs:
+        state.verdict !== null && state.publishedAtMs !== null
+          ? Math.max(0, now - state.publishedAtMs)
+          : 0,
+      analysis: this.analysis,
     };
-  }
-
-  /** Analyze one raw frame (also usable by tests with synthetic audio). */
-  feedFrame(frame: Float32Array, sampleRate: number): void {
-    if (this.chord === null || this.mic !== 'running') return;
-    this.result = analyzeStrum(this.chord, frame, sampleRate);
-    if (this.result.verdict === 'correct') {
-      this.correctStreak += 1;
-    } else if (this.result.verdict === 'quiet') {
-      // Silence between strums resets nothing — a fresh correct strum continues.
-    } else {
-      this.correctStreak = 0;
-    }
-    this.emit();
   }
 
   private tick(): void {
