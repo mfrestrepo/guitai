@@ -50,14 +50,14 @@ export function describeMicrophoneError(error: unknown): string {
   switch (name) {
     case 'NotAllowedError':
     case 'SecurityError':
-      return 'Microphone access was denied. Click the lock/camera icon in the address bar and allow the microphone, then try again.';
+      return 'Se denegó el acceso al micrófono. Pulsa el icono del candado en la barra del navegador, permite el micrófono y vuelve a intentarlo.';
     case 'NotFoundError':
-      return 'No microphone was found. Connect one and try again.';
+      return 'No se encontró ningún micrófono. Conecta uno y vuelve a intentarlo.';
     case 'NotReadableError':
     case 'OverconstrainedError':
-      return 'The microphone is in use by another application. Close it and try again.';
+      return 'El micrófono está en uso por otra aplicación. Ciérrala y vuelve a intentarlo.';
     default:
-      return `Could not start the microphone (${name ?? 'unknown error'}).`;
+      return `No se pudo iniciar el micrófono (${name ?? 'error desconocido'}).`;
   }
 }
 
@@ -67,7 +67,7 @@ export function createAudioContext(): AudioContext {
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) {
-    throw new Error('Web Audio API is not supported in this browser.');
+    throw new Error('Este navegador no soporta la Web Audio API.');
   }
   return new Ctor({ latencyHint: 'interactive' });
 }

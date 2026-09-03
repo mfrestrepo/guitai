@@ -14,7 +14,7 @@
  */
 
 import { openMicrophoneInput, describeMicrophoneError, type AudioInputHandle } from '../audio/input';
-import { detectPitch } from '../pitch/yin';
+import { analyzeFrame } from '../audio/frameAnalysis';
 import { PitchSmoother } from '../pitch/smoother';
 import { type Tuning, type TuningStringDef, tuningById } from '../theory/tunings';
 import { evaluateTuning, type TuningResult } from './evaluator';
@@ -22,8 +22,8 @@ import { evaluateTuning, type TuningResult } from './evaluator';
 /** Engine cadence: pull + analyze every ~33 ms (~30 readings/second). */
 export const TICK_MS = 33;
 
-/** Frames of pure audio below this RMS are treated as silence. */
-export const SILENCE_RMS = 0.0025;
+/** Re-exported so existing references keep working after the shared-module move. */
+export { SILENCE_RMS } from '../audio/frameAnalysis';
 
 export type EngineStatus =
   | { phase: 'idle' }
@@ -52,14 +52,6 @@ export interface TunerEngineEvents {
 export interface TunerEngineOptions extends TunerEngineEvents {
   /** Initial tuning id, see `theory/tunings.ts`. */
   tuningId?: string;
-}
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-
-/** Map a linear RMS to a roughly perceptual [0, 1] signal level. */
-function rmsToSignalLevel(rms: number): number {
-  const db = 20 * Math.log10(Math.max(rms, 1e-6)); // 0 dBFS ≈ rms 1.0
-  return clamp01((db + 60) / 55); // −60 dBFS → 0, ≈ −5 dBFS → 1
 }
 
 export class TunerEngine {
@@ -142,23 +134,10 @@ export class TunerEngine {
 
     input.readFrame(frame);
 
-    // --- Level gate: silence should not reach the pitch detector. ---------
-    let sumSquares = 0;
-    for (let i = 0; i < frame.length; i++) {
-      const v = frame[i];
-      sumSquares += v * v;
-    }
-    const rms = Math.sqrt(sumSquares / frame.length);
-    const signalLevel = rmsToSignalLevel(rms);
-
-    let smoothedHz: number | null;
-    if (rms < SILENCE_RMS) {
-      smoothedHz = this.smoother.push(null);
-    } else {
-      // --- Pitch detection (YIN) + smoothing -------------------------------
-      const pitch = detectPitch(frame, input.sampleRate);
-      smoothedHz = this.smoother.push(pitch ? pitch.frequency : null);
-    }
+    // Shared analysis: RMS gate + YIN. Silent frames yield pitchFrequency null,
+    // which drives the smoother into its silence path (see pitch/smoother.ts).
+    const { signalLevel, pitchFrequency } = analyzeFrame(frame, input.sampleRate);
+    const smoothedHz = this.smoother.push(pitchFrequency);
 
     if (smoothedHz === null) {
       this.events.onReading?.({ status: 'listening', signalLevel });

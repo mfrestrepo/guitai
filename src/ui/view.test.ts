@@ -69,7 +69,7 @@ describe('TunerView against index.html', () => {
     const select = q<HTMLSelectElement>('#tuning-select');
     expect(select.value).toBe('standard');
     expect(select.options.length).toBe(1);
-    expect(q<HTMLButtonElement>('#mic-button').textContent).toBe('Start microphone');
+    expect(q<HTMLButtonElement>('#mic-button').textContent).toBe('Iniciar micrófono');
     expect(q('#note-name').textContent).toBe('—');
     expect(q('#verdict').getAttribute('data-state')).toBe('idle');
   });
@@ -86,7 +86,7 @@ describe('TunerView against index.html', () => {
   it('renders a listening reading with the live signal meter', () => {
     const { view, q } = mount();
     view.render({ status: 'listening', signalLevel: 0.4 });
-    expect(q('#verdict').textContent).toContain('Hearing you');
+    expect(q('#verdict').textContent).toContain('Te oigo');
     expect(q('#level-fill').getAttribute('style')).toContain('width: 40%');
   });
 
@@ -100,7 +100,7 @@ describe('TunerView against index.html', () => {
     expect(q('#target-freq').textContent).toBe('110.0');
     expect(q('#cents-readout').textContent).toBe('0 ¢');
     expect(q('#needle').getAttribute('style')).toContain('left: 50%');
-    expect(q('#verdict').textContent).toContain('IN TUNE');
+    expect(q('#verdict').textContent).toContain('AFINADA');
     expect(q('#verdict').getAttribute('data-state')).toBe('inTune');
   });
 
@@ -109,7 +109,7 @@ describe('TunerView against index.html', () => {
     const sharp = 110 * 2 ** (30 / 1200); // A2 +30¢
     view.render(tuningReading(sharp));
     expect(q('#verdict').getAttribute('data-state')).toBe('sharp');
-    expect(q('#verdict').textContent).toContain('TOO HIGH');
+    expect(q('#verdict').textContent).toContain('DEMASIADO ALTA');
     expect(q('#needle').getAttribute('style')).toContain('left: 80%');
     expect(q('#note-name').getAttribute('data-state')).toBe('sharp');
   });
@@ -120,7 +120,7 @@ describe('TunerView against index.html', () => {
     view.render(tuningReading(midiToFrequency(lowE.midi) * 2 ** (-80 / 1200)));
     expect(q('#note-name').textContent).toBe('E2');
     expect(q('#target-freq').textContent).toBe('82.4');
-    expect(q('#verdict').textContent).toContain('TOO LOW');
+    expect(q('#verdict').textContent).toContain('DEMASIADO BAJA');
     expect(q('#needle').getAttribute('style')).toContain('left: 0%');
   });
 

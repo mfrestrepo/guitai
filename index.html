@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,77 +7,170 @@
       rel="icon"
       href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎸</text></svg>"
     />
-    <title>GuitAI — Guitar Tuner</title>
+    <title>GuitAI — Afinador y acordes</title>
   </head>
   <body>
     <div id="app">
-      <header class="topbar">
-        <div class="brand">
-          <span class="brand-mark">🎸</span>
-          <h1>GuitAI</h1>
-          <span class="brand-sub">Tuner</span>
+      <nav class="app-nav" aria-label="Módulos de GuitAI">
+        <button type="button" class="nav-btn active" data-view="tuner">🎛️ Afinador</button>
+        <button type="button" class="nav-btn" data-view="chords">🎸 Aprende acordes</button>
+      </nav>
+
+      <!-- ======================= MÓDULO 1 · AFINADOR ======================= -->
+      <section id="view-tuner">
+        <header class="topbar">
+          <div class="brand">
+            <span class="brand-mark">🎸</span>
+            <h1>GuitAI</h1>
+            <span class="brand-sub">Afinador</span>
+          </div>
+          <div class="topbar-controls">
+            <label class="field">
+              <span class="field-label">Afinación</span>
+              <select id="tuning-select" title="Afinación"></select>
+            </label>
+            <button id="mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
+          </div>
+        </header>
+
+        <main class="layout-grid">
+          <section class="card tuner-card">
+            <div id="strings-row" class="strings-row" role="group" aria-label="Cuerdas de la guitarra"></div>
+
+            <div class="note-block">
+              <div id="note-name" class="note-name" data-state="idle">&mdash;</div>
+              <div class="freq-line">
+                <span id="detected-freq" class="mono">--.-</span><span class="unit">Hz detectados</span>
+                <span class="sep">&middot;</span>
+                <span>objetivo</span>
+                <span id="target-freq" class="mono">--.-</span><span class="unit">Hz</span>
+              </div>
+            </div>
+
+            <div class="meter-wrap">
+              <div id="meter" class="meter">
+                <div class="meter-tick" style="left: 0%"></div>
+                <div class="meter-tick tick-minor" style="left: 15%"></div>
+                <div class="meter-tick tick-minor" style="left: 35%"></div>
+                <div class="meter-tick tick-center" style="left: 50%"></div>
+                <div class="meter-tick tick-minor" style="left: 65%"></div>
+                <div class="meter-tick tick-minor" style="left: 85%"></div>
+                <div class="meter-tick" style="left: 100%"></div>
+                <div id="needle" class="needle"></div>
+              </div>
+              <div class="meter-labels">
+                <span class="side-label flat">&#9837; baja</span>
+                <span id="cents-readout" class="cents mono">&plusmn;0 &cent;</span>
+                <span class="side-label sharp">alta &#9839;</span>
+              </div>
+            </div>
+
+            <div id="verdict" class="verdict" data-state="idle">Toca una sola cuerda&hellip;</div>
+          </section>
+
+          <section class="card status-card">
+            <h2>Estado</h2>
+            <p id="status-text" class="status-text">En espera de empezar.</p>
+            <div class="level-row">
+              <span class="field-label">Se&ntilde;al</span>
+              <div class="level-track"><div id="level-fill" class="level-fill"></div></div>
+            </div>
+            <ol class="hints">
+              <li>Pulsa <strong>Iniciar micrófono</strong> y permite el acceso.</li>
+              <li>Toca <strong>una cuerda cada vez</strong> y deja que suene.</li>
+              <li>Gira la clavija hasta que la aguja se centre y se ponga verde.</li>
+              <li>Tip: haz clic en una cuerda de arriba para fijarla como objetivo.</li>
+            </ol>
+          </section>
+        </main>
+      </section>
+
+      <!-- ==================== MÓDULO 2 · APRENDE ACORDES ==================== -->
+      <section id="view-chords" hidden>
+        <!-- Pantalla de inicio: niveles y acordes -->
+        <div id="chords-home">
+          <header class="chords-header">
+            <div class="brand">
+              <span class="brand-mark">🎸</span>
+              <h1>Aprende acordes</h1>
+              <span class="brand-sub">desde cero</span>
+            </div>
+            <div id="chords-progress" class="chords-progress" aria-live="polite"></div>
+          </header>
+
+          <div class="chords-intro">
+            <p>
+              <strong>Cómo funciona:</strong> elige un acorde de los niveles de abajo.
+              Primero <strong>mira cómo se hace</strong> (diagrama + dedos), coloca la mano
+              y luego pulsa <strong>Empezar a tocar</strong>: la app te irá pidiendo cada
+              cuerda y te dirá si suena bien o qué corregir.
+            </p>
+            <p>Los acordes salen en el orden en que se aprenden: ve nivel a nivel. &#128077;</p>
+          </div>
+
+          <div id="chord-levels" class="chord-levels"></div>
         </div>
-        <div class="topbar-controls">
-          <label class="field">
-            <span class="field-label">Tuning</span>
-            <select id="tuning-select" title="Tuning preset"></select>
-          </label>
-          <button id="mic-button" class="btn btn-primary" type="button">Start microphone</button>
+
+        <!-- Pantalla de lección (un acorde o una secuencia de práctica) -->
+        <div id="chord-lesson" hidden>
+          <button id="chord-lesson-back" class="btn btn-ghost" type="button">&larr; Volver a la lista</button>
+
+          <div class="lesson-head">
+            <div>
+              <h2 id="chord-lesson-title" class="lesson-title"></h2>
+              <p id="chord-lesson-context" class="lesson-context"></p>
+            </div>
+            <div id="chord-lesson-progress" class="chords-progress" aria-live="polite"></div>
+          </div>
+
+          <!-- Ficha del acorde -->
+          <div id="chord-card" class="card chord-card">
+            <div class="chord-card-top">
+              <div id="chord-diagram" class="chord-diagram" aria-label="Diagrama del acorde"></div>
+              <div class="chord-info">
+                <h3 id="chord-name"></h3>
+                <p id="chord-notes" class="chord-notes"></p>
+              </div>
+            </div>
+            <h4 class="chord-subtitle">Cómo se hace</h4>
+            <ol id="chord-howto" class="chord-howto"></ol>
+            <div id="chord-tips" class="chord-tips"></div>
+            <button id="chord-start" class="btn btn-primary btn-big" type="button">🎤 Empezar a tocar</button>
+          </div>
+
+          <!-- Práctica / validación -->
+          <div id="practice" class="card practice-card" hidden>
+            <div class="practice-toolbar">
+              <div id="practice-mic-status" class="practice-mic-status"></div>
+              <button id="practice-mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
+            </div>
+
+            <div id="practice-steps" class="practice-steps" role="list"></div>
+            <div id="practice-prompt" class="practice-prompt"></div>
+            <div id="practice-feedback" class="practice-feedback" hidden></div>
+
+            <div class="practice-actions">
+              <button id="practice-force" class="btn btn-ghost" type="button" hidden>
+                Ya la toqué &rarr; comprobar
+              </button>
+              <button id="practice-skip" class="btn btn-ghost" type="button" hidden>
+                Saltar esta cuerda
+              </button>
+            </div>
+
+            <div id="practice-done" class="practice-done" hidden>
+              <div id="practice-done-text" class="practice-done-text"></div>
+              <div class="practice-done-actions">
+                <button id="practice-repeat" class="btn btn-primary" type="button">Repetir</button>
+                <button id="practice-next" class="btn btn-primary" type="button" hidden></button>
+                <button id="practice-finish" class="btn btn-ghost" type="button">Volver a la lista</button>
+              </div>
+            </div>
+          </div>
         </div>
-      </header>
+      </section>
 
-      <main>
-        <section class="card tuner-card">
-          <div id="strings-row" class="strings-row" role="group" aria-label="Guitar strings"></div>
-
-          <div class="note-block">
-            <div id="note-name" class="note-name" data-state="idle">&mdash;</div>
-            <div class="freq-line">
-              <span id="detected-freq" class="mono">--.-</span><span class="unit">Hz detected</span>
-              <span class="sep">&middot;</span>
-              <span>target</span>
-              <span id="target-freq" class="mono">--.-</span><span class="unit">Hz</span>
-            </div>
-          </div>
-
-          <div class="meter-wrap">
-            <div id="meter" class="meter">
-              <div class="meter-tick" style="left: 0%"></div>
-              <div class="meter-tick tick-minor" style="left: 15%"></div>
-              <div class="meter-tick tick-minor" style="left: 35%"></div>
-              <div class="meter-tick tick-center" style="left: 50%"></div>
-              <div class="meter-tick tick-minor" style="left: 65%"></div>
-              <div class="meter-tick tick-minor" style="left: 85%"></div>
-              <div class="meter-tick" style="left: 100%"></div>
-              <div id="needle" class="needle"></div>
-            </div>
-            <div class="meter-labels">
-              <span class="side-label flat">&#9837; flat</span>
-              <span id="cents-readout" class="cents mono">&plusmn;0 &cent;</span>
-              <span class="side-label sharp">sharp &#9839;</span>
-            </div>
-          </div>
-
-          <div id="verdict" class="verdict" data-state="idle">Play a single string&hellip;</div>
-        </section>
-
-        <section class="card status-card">
-          <h2>Status</h2>
-          <p id="status-text" class="status-text">Waiting to start.</p>
-          <div class="level-row">
-            <span class="field-label">Signal</span>
-            <div class="level-track"><div id="level-fill" class="level-fill"></div></div>
-          </div>
-          <ol class="hints">
-            <li>Click <strong>Start microphone</strong> and allow access.</li>
-            <li>Pluck <strong>one string at a time</strong> and let it ring.</li>
-            <li>Turn the peg until the needle centers and the note turns green.</li>
-            <li>Tip: click a string above to lock it as the target.</li>
-          </ol>
-        </section>
-      </main>
-
-      <footer>GuitAI &middot; module 1 &mdash; real-time tuner &middot; Web Audio API</footer>
+      <footer>GuitAI &middot; afinador + acordes para principiantes &middot; Web Audio API</footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

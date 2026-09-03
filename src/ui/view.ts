@@ -48,11 +48,11 @@ interface TunerViewElements {
 export const NEEDLE_RANGE_CENTS = 50;
 
 const VERDICT_TEXT: Record<string, string> = {
-  inTune: 'IN TUNE ✓',
-  nearlyFlat: 'Nearly in tune ♭ — keep turning up',
-  nearlySharp: 'Nearly in tune ♯ — ease off a touch',
-  flat: 'TOO LOW ♭ — tune up',
-  sharp: 'TOO HIGH ♯ — tune down',
+  inTune: '¡AFINADA! ✓',
+  nearlyFlat: 'Casi afinada ♭ — sube un poco',
+  nearlySharp: 'Casi afinada ♯ — baja un poco',
+  flat: 'DEMASIADO BAJA ♭ — sube',
+  sharp: 'DEMASIADO ALTA ♯ — baja',
 };
 
 const VERDICT_COLORS: Record<string, string> = {
@@ -193,22 +193,22 @@ export class TunerView {
     const button = this.el.micButton;
     switch (status.phase) {
       case 'idle':
-        button.textContent = 'Start microphone';
+        button.textContent = 'Iniciar micrófono';
         button.disabled = false;
-        this.el.statusText.textContent = 'Waiting to start.';
+        this.el.statusText.textContent = 'En espera de empezar.';
         break;
       case 'starting':
-        button.textContent = 'Starting…';
+        button.textContent = 'Iniciando…';
         button.disabled = true;
-        this.el.statusText.textContent = 'Requesting microphone access…';
+        this.el.statusText.textContent = 'Pidiendo acceso al micrófono…';
         break;
       case 'running':
-        button.textContent = 'Stop';
+        button.textContent = 'Detener';
         button.disabled = false;
-        this.el.statusText.textContent = 'Listening — pluck one string at a time.';
+        this.el.statusText.textContent = 'Escuchando — toca una cuerda cada vez.';
         break;
       case 'error':
-        button.textContent = 'Start microphone';
+        button.textContent = 'Iniciar micrófono';
         button.disabled = false;
         this.el.statusText.textContent = status.message;
         break;
@@ -224,7 +224,7 @@ export class TunerView {
     this.el.needle.style.left = '50%';
     this.el.needle.style.background = '#64748b';
     this.el.meter.classList.remove('in-tune');
-    this.el.verdict.textContent = 'Play a single string…';
+    this.el.verdict.textContent = 'Toca una sola cuerda…';
     this.el.verdict.dataset.state = 'idle';
     this.el.levelFill.style.width = '0%';
     this.refreshChips(null);
@@ -233,7 +233,8 @@ export class TunerView {
   private renderListening(signalLevel: number): void {
     this.el.noteName.textContent = '…';
     this.el.noteName.dataset.state = 'idle';
-    this.el.verdict.textContent = signalLevel > 0.02 ? 'Hearing you — play a clear note…' : 'Listening…';
+    this.el.verdict.textContent =
+      signalLevel > 0.02 ? 'Te oigo — toca una nota clara…' : 'Escuchando…';
     this.el.verdict.dataset.state = 'idle';
     this.el.needle.style.left = '50%';
     this.el.needle.style.background = '#64748b';
