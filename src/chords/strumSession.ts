@@ -158,6 +158,20 @@ export class StrumMicSession {
   }
 
   /**
+   * Move to another chord without reopening the microphone (change drills):
+   * the tracker restarts so the new chord is judged from scratch.
+   */
+  changeChord(chordId: string): boolean {
+    const chord = chordById(chordId);
+    if (!chord) return false;
+    this.chord = chord;
+    this.tracker.reset();
+    this.analysis = null;
+    this.emit();
+    return true;
+  }
+
+  /**
    * Attach a chord WITHOUT opening the microphone (test hook): after this,
    * `feedFrame` can be driven with synthetic frames.
    */

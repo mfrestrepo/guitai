@@ -14,6 +14,7 @@
       <nav class="app-nav" aria-label="Módulos de GuitAI">
         <button type="button" class="nav-btn active" data-view="tuner">🎛️ Afinador</button>
         <button type="button" class="nav-btn" data-view="chords">🎸 Acordes</button>
+        <button type="button" class="nav-btn" data-view="changes">🔄 Cambios</button>
       </nav>
 
       <!-- ======================= MÓDULO 1 · AFINADOR ======================= -->
@@ -176,6 +177,97 @@
             <div class="practice-actions strum-actions">
               <button id="strum-next" class="btn btn-primary" type="button" hidden></button>
               <button id="strum-finish" class="btn btn-ghost" type="button">Lista</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== MÓDULO 3 · CAMBIOS DE ACORDE ==================== -->
+      <section id="view-changes" hidden>
+        <!-- Lista de ejercicios por nivel -->
+        <div id="changes-home">
+          <div class="chords-head">
+            <div>
+              <h1 class="chords-title">Cambios de acorde</h1>
+              <p class="chords-tagline">Ejercicios de transición, de muy fáciles a difíciles</p>
+            </div>
+            <div class="chords-head-actions">
+              <button id="changes-sound-button" class="icon-btn" type="button" title="Sonido de validación" aria-pressed="true">🔔</button>
+            </div>
+          </div>
+          <div id="changes-levels" class="chord-levels"></div>
+        </div>
+
+        <!-- Runner del ejercicio -->
+        <div id="changes-runner" hidden>
+          <div class="lesson-top">
+            <button id="changes-back" class="btn btn-ghost back-btn" type="button" aria-label="Volver">&larr;</button>
+            <div class="lesson-title" id="changes-title"></div>
+            <div class="lesson-context" id="changes-context"></div>
+            <div class="lesson-top-spacer"></div>
+            <div class="chords-progress" id="changes-timer">60 s</div>
+          </div>
+
+          <div class="card runner-card">
+            <div class="runner-chords">
+              <div class="runner-chord current" id="runner-current">&mdash;</div>
+              <div class="runner-arrow">&rarr;</div>
+              <div class="runner-chord next" id="runner-next">&mdash;</div>
+            </div>
+
+            <div class="runner-stage">
+              <div class="runner-diagram" id="runner-diagram"></div>
+              <div class="runner-beats" id="runner-beats" aria-hidden="true"></div>
+            </div>
+
+            <div class="runner-counters">
+              <div class="counter">
+                <span class="counter-value" id="runner-changes">0</span>
+                <span class="counter-label">cambios</span>
+              </div>
+              <div class="counter" id="runner-clean-wrap" hidden>
+                <span class="counter-value" id="runner-clean">0</span>
+                <span class="counter-label">limpios</span>
+              </div>
+              <div class="counter">
+                <span class="counter-value" id="runner-best">&mdash;</span>
+                <span class="counter-label">r&eacute;cord</span>
+              </div>
+            </div>
+
+            <div class="runner-controls">
+              <button id="runner-start" class="btn btn-primary btn-big" type="button">▶ Empezar</button>
+              <button id="runner-stop" class="btn btn-secondary btn-big" type="button" hidden>■ Parar</button>
+            </div>
+
+            <div class="runner-metronome">
+              <button id="metronome-toggle" class="icon-btn" type="button" title="Metrónomo" aria-pressed="false">⏱</button>
+              <div class="bpm-control">
+                <button id="bpm-down" class="btn btn-ghost bpm-btn" type="button" aria-label="Bajar tempo">−</button>
+                <span class="bpm-value" id="bpm-value">60</span>
+                <button id="bpm-up" class="btn btn-ghost bpm-btn" type="button" aria-label="Subir tempo">+</button>
+                <span class="bpm-label">BPM</span>
+              </div>
+              <label class="beats-select">
+                La app cambia cada
+                <select id="beats-per-chord" class="select-pill">
+                  <option value="1">1 tiempo</option>
+                  <option value="2">2 tiempos</option>
+                  <option value="4">4 tiempos</option>
+                </select>
+              </label>
+              <button id="mic-validate" class="icon-btn" type="button" title="Validar los acordes con el micrófono" aria-pressed="false">🎤</button>
+            </div>
+
+            <ul id="runner-tips" class="runner-tips"></ul>
+
+            <div id="runner-finished" class="practice-done" hidden>
+              <div id="runner-finished-text" class="practice-done-text"></div>
+              <div class="practice-done-actions">
+                <button id="runner-repeat" class="btn btn-primary" type="button">Repetir</button>
+                <button id="runner-finish" class="btn btn-ghost" type="button">Lista</button>
+              </div>
             </div>
           </div>
         </div>

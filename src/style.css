@@ -1998,3 +1998,261 @@ details.chord-details .tip {
 .strum-progress-fill.bad {
   background: linear-gradient(90deg, #f97316, #f87171);
 }
+
+/* ==========================================================================
+   Chord-change exercises (module 3)
+   ========================================================================== */
+.exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.exercise-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+.exercise-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+}
+
+.exercise-chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exercise-chord {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.exercise-arrow {
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+.exercise-title {
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.exercise-desc {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.exercise-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.exercise-anchor {
+  font-size: 0.82rem;
+  color: var(--green);
+}
+
+/* ---------- runner ---------- */
+.runner-card {
+  margin-top: 6px;
+}
+
+.runner-chords {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.runner-chord {
+  font-size: clamp(2.2rem, 9vw, 3.2rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.runner-chord.next {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  color: var(--text-dim);
+}
+
+.runner-arrow {
+  color: var(--text-dim);
+  font-size: 1.4rem;
+}
+
+.runner-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.runner-diagram svg {
+  max-width: 240px;
+  height: auto;
+}
+
+.runner-beats {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  min-height: 18px;
+}
+
+.beat-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1px solid var(--card-border);
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.beat-dot.accent {
+  border-color: rgba(34, 211, 238, 0.6);
+}
+
+.beat-dot.past {
+  background: rgba(34, 211, 238, 0.35);
+}
+
+.beat-dot.pulse {
+  background: var(--accent);
+  transform: scale(1.5);
+}
+
+.beat-dot.accent-pulse {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.runner-counters {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  margin: 16px 0 6px;
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.counter-value {
+  font-size: 2rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.counter-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.runner-controls {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+}
+
+.runner-controls .btn-big {
+  width: auto;
+  min-width: 190px;
+  margin-top: 0;
+}
+
+.runner-metronome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--card-border);
+}
+
+.icon-btn.active-toggle {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.6);
+}
+
+.bpm-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bpm-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.bpm-value {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  min-width: 3ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bpm-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+.beats-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.runner-tips {
+  margin: 14px 0 0;
+  padding-left: 20px;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.runner-tip + .runner-tip {
+  margin-top: 4px;
+}

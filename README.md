@@ -3,17 +3,19 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-175%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-220%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
 
-Two modules live in this repository (switch with the tabs at the top):
+Three modules live in this repository (switch with the tabs at the top):
 
 1. **Afinador** — a real-time chromatic tuner (module 1).
 2. **Aprende acordes** — a progressive beginner course (module 2): each chord
    shows *cómo se hace* (diagram, fingers, tips in Spanish) and the app
-   **validates live** whether you play it correctly, string by string.
+   **validates live** whether you play it correctly (strum or string by string).
+3. **Cambios** — chord-change drills by difficulty (module 3), with an optional
+   metronome (40–140 BPM), change counters and optional microphone validation.
 
 ✨ **Highlights**
 
@@ -107,6 +109,29 @@ that should sound, and **two ways to validate**:
 Chord progress is saved locally (✓ badges on the chord tiles). Design
 rationale, detection limits and how to add chords: see
 [`docs/chord-module.md`](docs/chord-module.md).
+
+---
+
+## Module 3 — Cambios de acorde (chord changes)
+
+The exercises follow the researched beginner drills (one-minute changes, anchor
+finger, air changes, four-chord loops, random changes — see
+[`docs/change-exercises.md`](docs/change-exercises.md) for the sources):
+
+- **Muy fáciles**: shapes that share fingers (Em↔Am, Em↔E, Am↔C…).
+- **Fáciles**: short moves (Em↔G, D↔A, Am↔D) + a first 1-minute drill.
+- **Medios**: G↔D, C↔G, loops A→D→E and G→C→D→Em.
+- **Difíciles**: fast loops (Em→C→G→D up to 100 BPM), changes every 2 beats,
+  G↔D against the clock, and random changes.
+
+Each exercise has its own **runner**: current and next chord, a live diagram,
+beat indicators, counters (*cambios*, *limpios*, *récord*) and the drill's tips.
+The **metronome is optional** (⏱): selectable tempo (40–140 BPM in steps of 5,
+remembered per exercise), how often the chord changes (every 1, 2 or 4 beats),
+audible click with a louder accent on beat 1, and it keeps perfect time thanks
+to a look-ahead audio scheduler. With 🎤 enabled, the microphone validates every
+chord with the strum check, so a change only counts as **clean** when the chord
+really sounds right — and the diagram lights up red on the failing string.
 
 ### Scripts
 
@@ -220,7 +245,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**175 tests in 22 files** — `npm test`:
+**220 tests in 27 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |
@@ -238,6 +263,11 @@ Core logic is kept free of the microphone and DOM so it is testable directly.
 | `chords/practice.test.ts`   | Per-string validation flow: advance, wrong, skip, master      |
 | `chords/strumCheck.test.ts` | **Synthesized strums**: clean chords, missing/muted/foreign   |
 | `chords/strumAttempt.test.ts` | Fast verdicts (~4 frames), per-string diagnosis, re-strum onset |
+| `chords/exercises.test.ts`  | Exercise catalog + anchor-finger detection                    |
+| `chords/exerciseSession.test.ts` | Drill state machine: sequence, counters, timer, best score |
+| `chords/exerciseProgress.test.ts` | Best-score persistence + corrupt-data recovery            |
+| `audio/metronome.test.ts`   | Beat maths, accents, tempo changes, stop/restart              |
+| `ui/changesView.test.ts`    | Real `index.html` (jsdom): list, runner, metronome controls   |
 | `chords/syntheticSession.test.ts` | **Synthesized audio** through analyzer → events → practice |
 | `chords/copy.test.ts`       | Spanish wording built from data (diagram/how-to/feedback)     |
 | `chords/progress.test.ts`   | localStorage progress + corrupt-data recovery                 |
@@ -282,8 +312,8 @@ cents = 1200 · log₂(detectedHz / targetHz)
    thresholds (constants in `chords/strumCheck.ts`) to your setup.
 2. Expand the chord course: barre chords (F…), more levels and drills — each
    chord/drill is data in `chords/catalog.ts` / `chords/curriculum.ts`.
-3. Strum-driven *change drills* (auto-advance on a clean strum) and a
-   changes-per-minute timer for Level 3.
+3. Barre-chord level for the change exercises (F, Bm…) and per-exercise
+   history charts of changes-per-minute.
 4. Alternative tunings (Drop D is one line in `theory/tunings.ts`) and
    per-tab progress.
 5. Extract the audio analysis into an `AudioWorklet` if CPU matters on slower
