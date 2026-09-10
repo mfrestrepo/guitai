@@ -224,3 +224,15 @@ the ones kept out of this version to avoid premature complexity:
   MPM alternative considered above.
 - Web Audio API — `AnalyserNode.getFloatTimeDomainData`,
   `AudioContext`/`getUserMedia` (MDN).
+
+## 10. Confirmation feedback (tuner UX)
+
+Reaching "in tune" is celebrated, but only once it is *real*: readings feed a
+small state machine (`src/tuner/tuningSession.ts`) that requires a string to
+stay inside the ±5¢ band for ~450 ms before it counts as tuned. At that moment
+the engine emits `onStringTuned` (the UI plays a synthesized bell —
+`src/audio/chime.ts` — and stamps a green ✓ on the peg) and, when the last
+string lands, `onAllTuned` (a short E-major fanfare). A confirmed string keeps
+its ✓ while the player moves on; it is only withdrawn if that string drifts
+more than ~30¢ away for ~600 ms. The hold/confirm thresholds are constants in
+`tuningSession.ts` and covered by unit tests with fake time.

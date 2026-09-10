@@ -1587,3 +1587,351 @@ details.chord-details .tip {
 .strum-verdict[data-state='success'] {
   animation: none;
 }
+
+/* ==========================================================================
+   Tuner v2 — GuitarTuna-inspired arc gauge, pegs with ✓, minimal text
+   ========================================================================== */
+.tuner-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.brand-text {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.tuner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.select-pill {
+  font: inherit;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.icon-btn:hover {
+  border-color: var(--accent);
+}
+
+.icon-btn.muted {
+  opacity: 0.55;
+}
+
+.tuner-stage {
+  position: relative;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(34, 211, 238, 0.10), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 45%),
+    var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 20px 22px 22px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+/* ---------- string pegs ---------- */
+.pegs {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 2vw, 14px);
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.string-chip {
+  position: relative;
+  width: clamp(52px, 13vw, 68px);
+  height: clamp(52px, 13vw, 68px);
+  min-width: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.15));
+  border: 2px solid var(--card-border);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.string-chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.string-chip .chip-note {
+  font-size: clamp(0.95rem, 3.4vw, 1.15rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.string-chip .chip-freq {
+  display: none;
+}
+
+.chip-check {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #4ade80, #22c55e);
+  color: #04120c;
+  font-size: 0.85rem;
+  font-weight: 900;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.string-chip.tuned {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.6), 0 0 18px rgba(52, 211, 153, 0.28);
+}
+
+.string-chip.tuned .chip-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.string-chip.active:not(.locked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(34, 211, 238, 0.3);
+}
+
+.string-chip.locked {
+  background: rgba(34, 211, 238, 0.14);
+  border-color: var(--accent);
+}
+
+/* ---------- arc gauge ---------- */
+.gauge {
+  position: relative;
+  max-width: 460px;
+  margin: 4px auto 0;
+}
+
+.gauge-host svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gauge-zone {
+  fill: none;
+  stroke-width: 13;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.zone-flat { stroke: #3b82f6; opacity: 0.5; }
+.zone-intune { stroke: #22c55e; }
+.zone-sharp { stroke: #f97316; opacity: 0.5; }
+
+.gauge-tick {
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1.5;
+}
+.gauge-tick.major { stroke: rgba(255, 255, 255, 0.42); stroke-width: 2; }
+.gauge-tick.center { stroke: #4ade80; stroke-width: 2.5; }
+
+.gauge-end {
+  font-family: system-ui;
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.gauge-end.flat { fill: #60a5fa; }
+.gauge-end.sharp { fill: #fb923c; }
+
+.gauge-needle {
+  stroke: #e2e8f0;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: transform 90ms linear, stroke 0.2s ease;
+  filter: drop-shadow(0 0 6px rgba(226, 232, 240, 0.35));
+}
+
+.gauge-hub {
+  fill: #94a3b8;
+}
+
+.gauge.in-tune .gauge-needle {
+  stroke: #4ade80;
+  filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.9));
+}
+
+@keyframes tuner-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.6)); }
+  50% { filter: drop-shadow(0 0 18px rgba(52, 211, 153, 1)); }
+}
+
+.gauge.in-tune {
+  animation: tuner-glow 1.4s ease-in-out infinite;
+}
+
+.gauge-readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.gauge-readout .note-name {
+  font-size: clamp(3rem, 15vw, 4.6rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease, text-shadow 0.2s ease;
+}
+
+.gauge-readout .note-name[data-state='inTune'] {
+  color: var(--green);
+  text-shadow: 0 0 30px rgba(52, 211, 153, 0.55);
+}
+.gauge-readout .note-name[data-state='flat'],
+.gauge-readout .note-name[data-state='nearlyFlat'] {
+  color: var(--blue);
+}
+.gauge-readout .note-name[data-state='sharp'],
+.gauge-readout .note-name[data-state='nearlySharp'] {
+  color: var(--red);
+}
+.gauge-readout .note-name[data-state='idle'] {
+  color: var(--text-dim);
+}
+
+.gauge-readout .cents {
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.gauge-readout .freq-line {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: baseline;
+}
+
+.gauge-readout .freq-line .mono {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.gauge-readout .freq-line .sep {
+  opacity: 0.5;
+}
+
+/* ---------- verdict ---------- */
+.verdict {
+  margin: 10px auto 0;
+  max-width: 460px;
+  text-align: center;
+  font-size: clamp(1.05rem, 4vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  color: var(--text-dim);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.verdict[data-state='inTune'] {
+  color: #04120c;
+  background: linear-gradient(180deg, #4ade80, #22c55e);
+  border-color: #34d399;
+  box-shadow: 0 0 30px rgba(52, 211, 153, 0.4);
+  transform: scale(1.01);
+}
+.verdict[data-state='nearlyFlat'],
+.verdict[data-state='nearlySharp'] {
+  color: var(--amber);
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.07);
+}
+.verdict[data-state='flat'] {
+  color: var(--blue);
+  border-color: rgba(96, 165, 250, 0.5);
+  background: rgba(96, 165, 250, 0.08);
+}
+.verdict[data-state='sharp'] {
+  color: var(--red);
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+/* ---------- footer ---------- */
+.tuner-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tuner-foot .status-text {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+  flex: 0 1 auto;
+}
+
+.tuner-foot .level-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.tuner-foot .level-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #06b6d4, #34d399);
+  transition: width 90ms linear;
+}

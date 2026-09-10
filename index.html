@@ -18,68 +18,44 @@
 
       <!-- ======================= MÓDULO 1 · AFINADOR ======================= -->
       <section id="view-tuner">
-        <header class="topbar">
+        <header class="tuner-bar">
           <div class="brand">
             <span class="brand-mark">🎸</span>
-            <h1>GuitAI</h1>
-            <span class="brand-sub">Afinador</span>
+            <div class="brand-text">
+              <h1>GuitAI</h1>
+              <span class="brand-sub">Afinador</span>
+            </div>
           </div>
-          <div class="topbar-controls">
-            <label class="field">
-              <span class="field-label">Afinación</span>
-              <select id="tuning-select" title="Afinación"></select>
-            </label>
-            <button id="mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
+          <div class="tuner-actions">
+            <select id="tuning-select" class="select-pill" title="Afinación"></select>
+            <button id="sound-button" class="icon-btn" type="button" title="Sonido de confirmación" aria-pressed="true">🔔</button>
+            <button id="mic-button" class="btn btn-primary" type="button">Iniciar</button>
           </div>
         </header>
 
-        <main class="layout-grid">
-          <section class="card tuner-card">
-            <div id="strings-row" class="strings-row" role="group" aria-label="Cuerdas de la guitarra"></div>
+        <section class="tuner-stage" id="tuner-stage">
+          <div id="strings-row" class="pegs" role="group" aria-label="Cuerdas de la guitarra"></div>
 
-            <div class="note-block">
+          <div class="gauge" id="meter">
+            <div id="gauge-host" class="gauge-host"></div>
+            <div class="gauge-readout">
               <div id="note-name" class="note-name" data-state="idle">&mdash;</div>
+              <div id="cents-readout" class="cents mono">&plusmn;0 &cent;</div>
               <div class="freq-line">
-                <span id="detected-freq" class="mono">--.-</span><span class="unit">Hz detectados</span>
+                <span id="detected-freq" class="mono">--.-</span><span class="unit">Hz</span>
                 <span class="sep">&middot;</span>
-                <span>objetivo</span>
                 <span id="target-freq" class="mono">--.-</span><span class="unit">Hz</span>
               </div>
             </div>
+          </div>
 
-            <div class="meter-wrap">
-              <div id="meter" class="meter">
-                <div class="meter-tick" style="left: 0%"></div>
-                <div class="meter-tick tick-minor" style="left: 15%"></div>
-                <div class="meter-tick tick-minor" style="left: 35%"></div>
-                <div class="meter-tick tick-center" style="left: 50%"></div>
-                <div class="meter-tick tick-minor" style="left: 65%"></div>
-                <div class="meter-tick tick-minor" style="left: 85%"></div>
-                <div class="meter-tick" style="left: 100%"></div>
-                <div id="needle" class="needle"></div>
-              </div>
-              <div class="meter-labels">
-                <span class="side-label flat">&#9837; baja</span>
-                <span id="cents-readout" class="cents mono">&plusmn;0 &cent;</span>
-                <span class="side-label sharp">alta &#9839;</span>
-              </div>
-            </div>
+          <div id="verdict" class="verdict" data-state="idle">Toca una cuerda&hellip;</div>
+        </section>
 
-            <div id="verdict" class="verdict" data-state="idle">Toca una sola cuerda&hellip;</div>
-          </section>
-
-          <section class="card status-card">
-            <h2>Estado</h2>
-            <p id="status-text" class="status-text">En espera de empezar.</p>
-            <div class="level-row">
-              <span class="field-label">Se&ntilde;al</span>
-              <div class="level-track"><div id="level-fill" class="level-fill"></div></div>
-            </div>
-            <ol class="hints">
-              <li>Toca una cuerda y gira la clavija hasta el verde.</li>
-            </ol>
-          </section>
-        </main>
+        <footer class="tuner-foot">
+          <span id="status-text" class="status-text">Pulsa Iniciar</span>
+          <div class="level-track"><div id="level-fill" class="level-fill"></div></div>
+        </footer>
       </section>
 
       <!-- ==================== MÓDULO 2 · APRENDE ACORDES ==================== -->

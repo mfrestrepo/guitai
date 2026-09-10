@@ -12,6 +12,7 @@ import { TunerEngine } from './tuner/engine';
 import { TunerView } from './ui/view';
 import { ChordUi } from './ui/chordView';
 import { TUNINGS } from './theory/tunings';
+import { playAllTunedFanfare, playTunedChime } from './audio/chime';
 
 const root = document.getElementById('app');
 if (!root) {
@@ -21,10 +22,39 @@ if (!root) {
 type ViewName = 'tuner' | 'chords';
 
 // ---- Module 1: tuner -------------------------------------------------------
+const SOUND_PREF_KEY = 'guitai.tuner.sound';
+
+function loadSoundPref(): boolean {
+  try {
+    return localStorage.getItem(SOUND_PREF_KEY) !== 'off';
+  } catch {
+    return true; // storage unavailable → default to sound on
+  }
+}
+
+function saveSoundPref(enabled: boolean): void {
+  try {
+    localStorage.setItem(SOUND_PREF_KEY, enabled ? 'on' : 'off');
+  } catch {
+    // ignore: the preference is a nicety
+  }
+}
+
+let soundEnabled = loadSoundPref();
 let tunerView!: TunerView;
-const engine = new TunerEngine({
+let engine!: TunerEngine;
+
+engine = new TunerEngine({
   onReading: (reading) => tunerView.render(reading),
   onStatusChange: (status) => tunerView.setStatus(status),
+  // Confirmation feedback: a chime when a string is confirmed in tune, and a
+  // small fanfare when the whole guitar is tuned.
+  onStringTuned: () => {
+    if (soundEnabled) playTunedChime(engine.audioContext);
+  },
+  onAllTuned: () => {
+    if (soundEnabled) playAllTunedFanfare(engine.audioContext);
+  },
 });
 
 const tuningOptions = TUNINGS.map((tuning) => ({ id: tuning.id, name: tuning.name }));
@@ -49,9 +79,15 @@ tunerView = new TunerView(root, {
     }
   },
   onStringSelect: (number) => engine.setPreferredString(number),
+  onToggleSound: () => {
+    soundEnabled = !soundEnabled;
+    saveSoundPref(soundEnabled);
+    tunerView.setSoundEnabled(soundEnabled);
+  },
 });
 tunerView.setTuningOptions(tuningOptions, engine.tuningId);
 tunerView.setStrings(TUNINGS[0].strings);
+tunerView.setSoundEnabled(soundEnabled);
 
 // ---- Module 2: chords ------------------------------------------------------
 const chordUi = new ChordUi(root);

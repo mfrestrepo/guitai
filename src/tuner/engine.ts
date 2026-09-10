@@ -18,6 +18,7 @@ import { analyzeFrame } from '../audio/frameAnalysis';
 import { PitchSmoother } from '../pitch/smoother';
 import { type Tuning, type TuningStringDef, tuningById } from '../theory/tunings';
 import { evaluateTuning, type TuningResult } from './evaluator';
+import { TuningSession } from './tuningSession';
 
 /** Engine cadence: pull + analyze every ~33 ms (~30 readings/second). */
 export const TICK_MS = 33;
@@ -35,6 +36,8 @@ export interface TuningReading extends TuningResult {
   readonly status: 'tuning';
   /** Signal level in [0, 1] for the level meter (logarithmic scale). */
   readonly signalLevel: number;
+  /** String numbers already confirmed as tuned in this session (✓ marks). */
+  readonly tunedStrings: readonly number[];
 }
 
 export type Reading =
@@ -47,6 +50,10 @@ export interface TunerEngineEvents {
   onReading?(reading: Reading): void;
   /** Emitted when the engine transitions between idle/starting/running/error. */
   onStatusChange?(status: EngineStatus): void;
+  /** A string has just been confirmed in tune → play the confirmation cue. */
+  onStringTuned?(stringNumber: number): void;
+  /** Every string of the tuning is now tuned → play the fanfare. */
+  onAllTuned?(): void;
 }
 
 export interface TunerEngineOptions extends TunerEngineEvents {
@@ -57,6 +64,8 @@ export interface TunerEngineOptions extends TunerEngineEvents {
 export class TunerEngine {
   private readonly events: TunerEngineEvents;
   private readonly smoother = new PitchSmoother();
+  /** Tracks per-string confirmation (✓ marks + chime triggers). */
+  private session: TuningSession;
 
   private input: AudioInputHandle | null = null;
   private tickTimer: ReturnType<typeof setInterval> | null = null;
@@ -73,6 +82,7 @@ export class TunerEngine {
       throw new Error(`Unknown tuning id "${options.tuningId}".`);
     }
     this.tuning = tuning;
+    this.session = new TuningSession(tuning.strings.length);
   }
 
   get statusSnapshot(): EngineStatus {
@@ -83,6 +93,11 @@ export class TunerEngine {
     return this.tuning.id;
   }
 
+  /** Audio context of the running mic (used to play confirmation cues). */
+  get audioContext(): AudioContext | null {
+    return this.input?.context ?? null;
+  }
+
   /** Switch the tuning preset (data-driven, see `theory/tunings.ts`). */
   setTuning(id: string): void {
     const tuning = tuningById(id);
@@ -90,6 +105,9 @@ export class TunerEngine {
       throw new Error(`Unknown tuning id "${id}".`);
     }
     this.tuning = tuning;
+    // A different tuning may have a different number of strings.
+    this.session = new TuningSession(tuning.strings.length);
+    this.session.reset();
   }
 
   /** Lock the target string (1 = high E … 6 = low E) or `undefined` for auto. */
@@ -105,6 +123,7 @@ export class TunerEngine {
       this.input = await openMicrophoneInput();
       this.frame = new Float32Array(this.input.analyser.fftSize);
       this.smoother.reset();
+      this.session.reset();
       this.setStatus({ phase: 'running' });
       this.tickTimer = setInterval(() => this.tick(), TICK_MS);
     } catch (error) {
@@ -122,6 +141,7 @@ export class TunerEngine {
     this.input?.stop();
     this.input = null;
     this.smoother.reset();
+    this.session.reset();
     this.setStatus({ phase: 'idle' });
     this.events.onReading?.({ status: 'idle' });
   }
@@ -140,12 +160,31 @@ export class TunerEngine {
     const smoothedHz = this.smoother.push(pitchFrequency);
 
     if (smoothedHz === null) {
+      // Silence: keep the ✓ marks, drop any pending confirmation streak.
+      this.session.update(null, Date.now());
       this.events.onReading?.({ status: 'listening', signalLevel });
       return;
     }
 
     const result = evaluateTuning(smoothedHz, this.tuning, this.preferredStringNumber);
-    const reading: TuningReading = { status: 'tuning', signalLevel, ...result };
+
+    // Confirmation tracking (✓ marks + chime): a string counts as tuned only
+    // after staying in tune for a short hold (see tuningSession.ts).
+    const sessionEvents = this.session.update(
+      { stringNumber: result.string.number, cents: result.cents, verdict: result.verdict },
+      Date.now(),
+    );
+    for (const event of sessionEvents) {
+      if (event.kind === 'string-tuned') this.events.onStringTuned?.(event.stringNumber);
+      else if (event.kind === 'all-tuned') this.events.onAllTuned?.();
+    }
+
+    const reading: TuningReading = {
+      status: 'tuning',
+      signalLevel,
+      tunedStrings: this.session.tunedStrings(),
+      ...result,
+    };
     this.events.onReading?.(reading);
   }
 

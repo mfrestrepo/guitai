@@ -3,7 +3,7 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-150%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-168%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
@@ -55,9 +55,13 @@ the note you play on a standard-tuned guitar:
 
 - which string you are playing and the target pitch (E2 A2 D3 G3 B3 E4)
 - the detected frequency and the deviation **in cents**
-- a large needle gauge with a clear **flat / nearly in tune / in tune /
-  nearly sharp / sharp** verdict
-- a signal meter, plus the option to lock a string manually by clicking it
+- a GuitarTuna-style **arc gauge** (flat / in-tune / sharp zones) with a needle
+  that rotates smoothly, a big note + cents readout and a short verdict
+- **confirmation feedback**: when a string reaches tune, GuitAI plays a soft
+  chime and stamps a green ✓ on that string's peg (the cue fires once per
+  string and re-arms only if the string drifts clearly out of tune)
+- a small fanfare when all six strings are tuned, a 🔔/🔇 sound toggle,
+  a signal meter, and clickable pegs to lock a string manually
 
 ### Run it
 
@@ -213,7 +217,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**150 tests in 20 files** — `npm test`:
+**168 tests in 22 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |
@@ -221,6 +225,8 @@ Core logic is kept free of the microphone and DOM so it is testable directly.
 | `pitch/yin.test.ts`         | Detector accuracy, harmonic/octave traps, noise/silence       |
 | `pitch/smoother.test.ts`    | Jitter averaging, spike rejection, note-change, silence       |
 | `pitch/pipeline.test.ts`    | **Synthesized guitar audio** → detect → smooth → evaluate     |
+| `tuner/tuningSession.test.ts` | Confirmation logic: hold time, ✓ marks, drift reset, all-tuned |
+| `audio/chime.test.ts`       | Confirmation chime/fanfare calls + defensive failure handling |
 | `tuner/evaluator.test.ts`   | ±5¢ in-tune band, ±15¢ nearly-band, verdict boundaries, lock  |
 | `chords/catalog.test.ts`    | Shapes spell the right chord; expected notes per string       |
 | `chords/curriculum.test.ts` | Levels/drills reference existing chords, teaching order       |
