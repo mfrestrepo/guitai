@@ -90,7 +90,18 @@ tunerView.setStrings(TUNINGS[0].strings);
 tunerView.setSoundEnabled(soundEnabled);
 
 // ---- Module 2: chords ------------------------------------------------------
-const chordUi = new ChordUi(root);
+let chordUi!: ChordUi;
+chordUi = new ChordUi(root, {
+  // One shared sound preference for both modules.
+  isSoundEnabled: () => soundEnabled,
+  onToggleSound: () => {
+    soundEnabled = !soundEnabled;
+    saveSoundPref(soundEnabled);
+    tunerView.setSoundEnabled(soundEnabled);
+    chordUi.setSoundEnabled(soundEnabled);
+  },
+});
+chordUi.setSoundEnabled(soundEnabled);
 chordUi.showHome();
 
 // ---- Navigation ------------------------------------------------------------

@@ -3,7 +3,7 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-168%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-175%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
@@ -92,10 +92,13 @@ Every chord opens a **lesson card**: an SVG diagram of the frets/fingers,
 short *cómo se hace* steps (tips are tucked away in a collapsible), the notes
 that should sound, and **two ways to validate**:
 
-1. **🎸 Rasgueo** (the friendly default) — strum the chord and hold it: the app
-   runs a spectral analysis and answers immediately with a big *"¡Bien! Suena
-   a Em"*, or tells you concisely what to fix (a string that does not sound,
-   one that should be muted and rings, or a foreign note). A clean strum held for a moment marks the chord as learned.
+1. **🎸 Rasgueo** (the friendly default) — strum the chord and hold it: a
+   verdict appears in a fraction of a second (~0.25 s of sound), with a
+   **validation chime** when the chord is right (or a soft "adjust" tone when
+   it is not). While listening, the **chord diagram lights up live**: green
+   strings sound, red ones are the culprits (missing string, muted string that
+   rings, foreign note), and a progress bar shows how much evidence has been
+   gathered. A clean strum held for a moment marks the chord as learned.
 2. **🎵 Cuerda a cuerda** — the precise mode: the app asks for each string in
    order and validates with the tuner-grade YIN detector, e.g. *"Suena Mi
    (E3), pero la 5ª cuerda debe sonar Si (B2). Parece que tocaste la 4ª
@@ -217,7 +220,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**168 tests in 22 files** — `npm test`:
+**175 tests in 22 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |
@@ -234,6 +237,7 @@ Core logic is kept free of the microphone and DOM so it is testable directly.
 | `chords/events.test.ts`     | Note-onset state machine (blips, ringing, retrigger)          |
 | `chords/practice.test.ts`   | Per-string validation flow: advance, wrong, skip, master      |
 | `chords/strumCheck.test.ts` | **Synthesized strums**: clean chords, missing/muted/foreign   |
+| `chords/strumAttempt.test.ts` | Fast verdicts (~4 frames), per-string diagnosis, re-strum onset |
 | `chords/syntheticSession.test.ts` | **Synthesized audio** through analyzer → events → practice |
 | `chords/copy.test.ts`       | Spanish wording built from data (diagram/how-to/feedback)     |
 | `chords/progress.test.ts`   | localStorage progress + corrupt-data recovery                 |

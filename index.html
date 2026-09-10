@@ -67,7 +67,10 @@
               <h1 class="chords-title">Acordes</h1>
               <p class="chords-tagline">Tu camino del 1 al 3</p>
             </div>
-            <div id="chords-progress" class="chords-progress" aria-live="polite"></div>
+            <div class="chords-head-actions">
+              <button id="chords-sound-button" class="icon-btn" type="button" title="Sonido de validación" aria-pressed="true">🔔</button>
+              <div id="chords-progress" class="chords-progress" aria-live="polite"></div>
+            </div>
           </div>
           <div id="chord-levels" class="chord-levels"></div>
         </div>
@@ -159,10 +162,14 @@
               <button id="strum-mic-button" class="btn btn-primary" type="button">Iniciar micrófono</button>
             </div>
 
-            <div class="strum-stage" id="strum-stage">
-              <div id="strum-chord-name" class="strum-chord-name"></div>
-              <div id="strum-verdict" class="strum-verdict" aria-live="polite">Rasguea y mantenlo unos segundos&hellip;</div>
-              <ul id="strum-issues" class="strum-issues"></ul>
+            <div class="strum-layout">
+              <div id="strum-diagram" class="practice-diagram strum-diagram"></div>
+              <div class="strum-stage" id="strum-stage">
+                <div id="strum-chord-name" class="strum-chord-name"></div>
+                <div id="strum-verdict" class="strum-verdict" aria-live="polite">Rasguea y mantenlo&hellip;</div>
+                <div class="strum-progress"><div id="strum-progress-fill" class="strum-progress-fill"></div></div>
+                <ul id="strum-issues" class="strum-issues"></ul>
+              </div>
             </div>
             <div class="strum-lights" id="strum-lights" role="img" aria-label="Cuerdas detectadas"></div>
 

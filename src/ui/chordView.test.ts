@@ -14,14 +14,20 @@ import { ChordUi } from './chordView';
 function mount() {
   const dom = new JSDOM(htmlSource, { runScripts: 'outside-only', url: 'http://localhost/' });
   (globalThis as Record<string, unknown>).document = dom.window.document;
-  const ui = new ChordUi(dom.window.document);
+  const events = { soundToggles: 0 };
+  const ui = new ChordUi(dom.window.document, {
+    isSoundEnabled: () => true,
+    onToggleSound: () => {
+      events.soundToggles += 1;
+    },
+  });
   ui.showHome();
   const q = <T extends Element>(selector: string) => {
     const el = dom.window.document.querySelector<T>(selector);
     if (!el) throw new Error(`Missing element ${selector}`);
     return el;
   };
-  return { ui, q };
+  return { ui, q, events };
 }
 
 const tileNames = (q: (s: string) => Element) =>
@@ -44,9 +50,10 @@ describe('ChordUi against index.html (visual redesign)', () => {
     // Each chord card shows its own mini diagram.
     const first = q('#chord-levels').querySelector('.chord-card-mini')!;
     expect(first.querySelector('.chord-mini svg')).not.toBeNull();
-    // Progress ring + label.
+    // Progress ring + label + shared sound toggle.
     expect(q('#chords-progress').querySelector('.progress-ring')).not.toBeNull();
     expect(q('#chords-progress').textContent).toContain('0/7');
+    expect(q<HTMLButtonElement>('#chords-sound-button').textContent).toBe('🔔');
   });
 
   it('opens the Em lesson: hero diagram, facts, how-to behind a toggle', () => {
@@ -96,7 +103,7 @@ describe('ChordUi against index.html (visual redesign)', () => {
     expect(q<HTMLButtonElement>('#practice-mic-button').textContent).toBe('Iniciar');
   });
 
-  it('strum mode without a microphone shows a clear error', async () => {
+  it('strum mode without a microphone shows a clear error and the live diagram', async () => {
     const { q } = mount();
     openTile(q, 'A');
     q<HTMLButtonElement>('#mode-strum').click();
@@ -106,6 +113,19 @@ describe('ChordUi against index.html (visual redesign)', () => {
     expect(q('#strum-mic-status').textContent).toContain('No se pudo');
     expect(q<HTMLButtonElement>('#strum-mic-button').textContent).toBe('Iniciar');
     expect(q('#strum-chord-name').textContent).toBe('A');
+    // Transparency: the chord diagram and the progress bar are always shown.
+    expect(q('#strum-diagram').innerHTML).toContain('<svg');
+    expect(q('#strum-progress-fill').getAttribute('style')).toContain('width: 0%');
+  });
+
+  it('toggles the validation sound from the chord header', () => {
+    const { ui, q, events } = mount();
+    q<HTMLButtonElement>('#chords-sound-button').click();
+    expect(events.soundToggles).toBe(1);
+    ui.setSoundEnabled(false);
+    expect(q<HTMLButtonElement>('#chords-sound-button').textContent).toBe('🔇');
+    ui.setSoundEnabled(true);
+    expect(q<HTMLButtonElement>('#chords-sound-button').textContent).toBe('🔔');
   });
 
   it('close buttons and deactivation work cleanly', () => {

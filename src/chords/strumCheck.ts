@@ -28,6 +28,13 @@ import { bandMean, bandMedian, bandPeak, magnitudeSpectrum, spectralPeaks } from
 /** Frames the strum session reads from the analyser (≈370 ms @ 44.1 kHz). */
 export const STRUM_FRAME_SIZE = 16384;
 
+/** RMS amplitude of a PCM frame (0…1) — used by the silence gate. */
+export function frameRms(samples: Float32Array): number {
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
+  return Math.sqrt(sum / samples.length);
+}
+
 /** Half-width of a string's fundamental band (± cents). */
 export const BAND_CENTS = 55;
 
@@ -48,9 +55,13 @@ export const NOISE_RANGE_HZ: readonly [number, number] = [1500, 6000];
 /** Foreign-note scan cap in Hz — see the file header for the rationale. */
 export const FOREIGN_SCAN_MAX_HZ = 400;
 
-/** Below these levels the frame is treated as silence (no strum). */
-export const QUIET_BAND_MEAN = 0.01;
-export const QUIET_BAND_PEAK = 0.02;
+/**
+ * Silence gate: RMS of the frame (0…1). Using RMS instead of an absolute
+ * spectral magnitude makes the check work with real microphones, whose levels
+ * are far lower than the synthetic test signals — an absolute magnitude
+ * threshold was why real strums could be ignored as "silence".
+ */
+export const QUIET_RMS = 0.004;
 
 export type StrumIssueKind = 'missing' | 'muted-ring' | 'foreign';
 
@@ -125,6 +136,9 @@ export function analyzeStrum(
   samples: Float32Array,
   sampleRate: number,
 ): StrumCheckResult {
+  // 1) Silence gate first (cheap, gain-independent).
+  if (frameRms(samples) < QUIET_RMS) return { verdict: 'quiet', scores: [], issues: [] };
+
   const mag = magnitudeSpectrum(samples);
   const bands = stringBands(chord);
   const noise = bandMedian(mag, sampleRate, NOISE_RANGE_HZ[0], NOISE_RANGE_HZ[1]);
@@ -142,10 +156,8 @@ export function analyzeStrum(
   const peakBandMean = sounding.reduce((max, s) => Math.max(max, s.meanNet), 0);
   const peakBandPeak = sounding.reduce((max, s) => Math.max(max, s.peakNet), 0);
 
-  // Absolute silence gate: is there a strum at all?
-  if (peakBandMean < QUIET_BAND_MEAN || peakBandPeak < QUIET_BAND_PEAK) {
-    return { verdict: 'quiet', scores: [], issues: [] };
-  }
+  // No usable string energy at all (e.g. only noise/hum) → treat as silence.
+  if (peakBandPeak <= 0) return { verdict: 'quiet', scores: [], issues: [] };
 
   const scores: StrumStringScore[] = bandStats.map((s) => {
     const meanOk = s.meanNet >= MISSING_MEAN_RATIO * peakBandMean;

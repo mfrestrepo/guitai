@@ -130,6 +130,11 @@ export class ChordMicSession {
     this.emit();
   }
 
+  /** Audio context of the running mic (used to play validation cues). */
+  get audioContext(): AudioContext | null {
+    return this.input?.context ?? null;
+  }
+
   /** Manual fallback: "ya la toqué" — check the most recent voiced pitch. */
   forceCheckNow(): boolean {
     if (this.practice === null) return false;

@@ -71,7 +71,28 @@ It checks, per frame (~370 ms window, updated ~10×/s):
    the chord's pitch classes up to ~400 Hz (verified empirically), so an
    out-of-chord peak down there is genuinely wrong.
 
-Readability: raw frames flicker, so results pass through a verdict gate (`chords/strumGate.ts`) that only publishes a verdict after ~1–2 s of consistent sound and holds it on screen a few seconds — the UI never flips faster than a human can read. The microphone session is `strumSession.ts`.
+Responsiveness & readability: raw frames flicker, and an early version kept
+the user waiting ("listening…" with no result) because it (a) required a long
+window of consistent frames and (b) used an *absolute* spectral threshold that
+real microphone levels never reached. Both are fixed:
+
+- the silence gate is now **RMS-based** (`QUIET_RMS`), gain-independent — the
+  same criterion the tuner uses, so real strums are actually analysed;
+- results are aggregated per **strum attempt** (`chords/strumAttempt.ts`): the
+  attempt starts with the attack, per-string *presence votes* and maximum
+  ratios are accumulated (the decay does not erase a string), and a verdict is
+  published after only a few frames (~0.25 s). A **level jump** (new attack)
+  starts a new attempt, so re-strumming gives a new verdict immediately;
+- the published verdict is held on screen a few seconds, then the panel returns
+  to listening.
+
+Transparency & feedback: the **chord diagram lights up live** while listening
+(green = that string sounds, red = the culprit: missing, wrongly-ringing muted
+string, or a foreign note), a progress bar shows the evidence gathered, and the
+verdict triggers a **validation chime** (reusing `audio/chime.ts`); a wrong
+strum plays a softer "adjust" tone instead. The same chime fires per correctly
+validated string in the *cuerda a cuerda* mode, with a fanfare when the chord is
+mastered. A shared 🔔/🔇 toggle (same preference as the tuner) silences them.
 
 Honest limits (validated in `strumCheck.test.ts`): the low open E's own 2nd
 harmonic sits *exactly* on E3, so in E-family chords a mis-fretted E3 string is

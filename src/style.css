@@ -1935,3 +1935,66 @@ details.chord-details .tip {
   background: linear-gradient(90deg, #06b6d4, #34d399);
   transition: width 90ms linear;
 }
+
+/* ==========================================================================
+   Strum v2 — live diagram, progress bar, sound toggle
+   ========================================================================== */
+.chords-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strum-layout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  justify-items: center;
+}
+
+@media (max-width: 700px) {
+  .strum-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.strum-diagram svg {
+  max-width: 300px;
+  height: auto;
+}
+
+.strum-stage {
+  width: 100%;
+  text-align: center;
+}
+
+.strum-chord-name {
+  font-size: clamp(2.6rem, 12vw, 4rem);
+}
+
+.strum-progress {
+  height: 6px;
+  width: min(320px, 80%);
+  margin: 10px auto 4px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.strum-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #06b6d4, #34d399);
+  transition: width 120ms linear, background 0.2s ease;
+}
+
+.strum-progress-fill.done {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.strum-progress-fill.bad {
+  background: linear-gradient(90deg, #f97316, #f87171);
+}

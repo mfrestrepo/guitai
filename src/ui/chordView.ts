@@ -23,11 +23,11 @@ import {
   type ProgressStorage,
 } from '../chords/progress';
 import { chordHowToLines, describeCheck, strumIssueLine } from '../chords/copy';
+import { playAdjustTone, playAllTunedFanfare, playTunedChime } from '../audio/chime';
 import { chordDiagramSvg, type StringState } from './chordDiagram';
 import { ChordMicSession, type ChordSessionSnapshot } from '../chords/micSession';
 import { StrumMicSession, type StrumSessionSnapshot } from '../chords/strumSession';
 import type { PracticeSnapshot, StepState } from '../chords/practice';
-import type { StrumCheckResult } from '../chords/strumCheck';
 
 type PracticeMode = 'arpeggio' | 'strum';
 
@@ -74,11 +74,21 @@ interface ChordElements {
   strumVerdict: HTMLElement;
   strumIssues: HTMLUListElement;
   strumLights: HTMLElement;
+  strumDiagram: HTMLElement;
+  strumProgressFill: HTMLElement;
+  soundButton: HTMLButtonElement;
   strumNext: HTMLButtonElement;
   strumFinish: HTMLButtonElement;
 }
 
 type LessonKind = { type: 'chord'; levelIndex?: number } | { type: 'drill'; drill: ChangeDrill };
+
+export interface ChordUiCallbacks {
+  /** Whether validation sounds are enabled (shared with the tuner). */
+  isSoundEnabled(): boolean;
+  /** User toggled the validation sound. */
+  onToggleSound(): void;
+}
 
 function mustGet<T extends Element>(root: ParentNode, selector: string): T {
   const el = root.querySelector<T>(selector);
@@ -114,7 +124,17 @@ export class ChordUi {
   private forceFailedMessage = '';
   private strumLearnedMarked = new Set<string>();
 
-  constructor(root: ParentNode) {
+  private readonly callbacks: ChordUiCallbacks;
+  /** Watchdogs to play each cue exactly once. */
+  private lastStrumVerdictSeq = 0;
+  private lastArpeggioOkCount = 0;
+  /** Cached SVG keys so we only rebuild diagrams when the state really changes. */
+  private practiceDiagramKey = '';
+  private strumDiagramKey = '';
+  private lastArpeggioMastered = false;
+
+  constructor(root: ParentNode, callbacks: ChordUiCallbacks) {
+    this.callbacks = callbacks;
     this.storage = browserProgressStorage();
     this.els = {
       home: mustGet(root, '#chords-home'),
@@ -157,6 +177,9 @@ export class ChordUi {
       strumVerdict: mustGet(root, '#strum-verdict'),
       strumIssues: mustGet<HTMLUListElement>(root, '#strum-issues'),
       strumLights: mustGet(root, '#strum-lights'),
+      strumDiagram: mustGet(root, '#strum-diagram'),
+      strumProgressFill: mustGet(root, '#strum-progress-fill'),
+      soundButton: mustGet<HTMLButtonElement>(root, '#chords-sound-button'),
       strumNext: mustGet<HTMLButtonElement>(root, '#strum-next'),
       strumFinish: mustGet<HTMLButtonElement>(root, '#strum-finish'),
     };
@@ -173,11 +196,34 @@ export class ChordUi {
     this.els.nextButton.addEventListener('click', () => this.advanceLesson());
     this.els.finishButton.addEventListener('click', () => this.showHome());
     this.els.strumMicButton.addEventListener('click', () => this.toggleStrumMic());
+    this.els.soundButton.addEventListener('click', () => this.callbacks.onToggleSound());
     this.els.strumNext.addEventListener('click', () => this.advanceLesson());
     this.els.strumFinish.addEventListener('click', () => this.showHome());
 
     this.session = new ChordMicSession({ onChange: (s) => this.onArpeggioChange(s) });
     this.strum = new StrumMicSession({ onChange: (s) => this.onStrumChange(s) });
+  }
+
+  /** Update the validation-sound button (🔔 on / 🔇 off). */
+  setSoundEnabled(enabled: boolean): void {
+    this.els.soundButton.textContent = enabled ? '🔔' : '🔇';
+    this.els.soundButton.setAttribute('aria-pressed', String(enabled));
+    this.els.soundButton.classList.toggle('muted', !enabled);
+  }
+
+  private playSuccess(): void {
+    if (!this.callbacks.isSoundEnabled()) return;
+    playTunedChime(this.strum.audioContext ?? this.session.audioContext);
+  }
+
+  private playAdjust(): void {
+    if (!this.callbacks.isSoundEnabled()) return;
+    playAdjustTone(this.strum.audioContext ?? this.session.audioContext);
+  }
+
+  private playFanfare(): void {
+    if (!this.callbacks.isSoundEnabled()) return;
+    playAllTunedFanfare(this.strum.audioContext ?? this.session.audioContext);
   }
 
   showHome(): void {
@@ -304,6 +350,8 @@ export class ChordUi {
         ? `${this.lessonIndex + 1}/${this.lessonChordIds.length}`
         : '';
 
+    this.practiceDiagramKey = '';
+    this.strumDiagramKey = '';
     this.els.diagram.innerHTML = chordDiagramSvg(chord, { scale: 1 });
     this.els.chordName.textContent = chord.displayName;
     this.els.chordNotes.textContent = chordNotesLine(chord);
@@ -383,12 +431,24 @@ export class ChordUi {
     this.els.skipButton.hidden = true;
     this.forceFailedMessage = '';
     this.els.steps.replaceChildren();
+    this.lastArpeggioOkCount = 0;
+    this.lastArpeggioMastered = false;
   }
 
   private renderArpeggio(snapshot: ChordSessionSnapshot, practice: PracticeSnapshot): void {
     const chord = this.currentChord!;
     this.renderStepChips(practice.steps);
     this.renderPracticeDiagram(chord, diagramStatesFrom(practice));
+
+    // Confirmation cues: one chime per string that becomes correct, and a
+    // little fanfare the first time the whole chord is mastered.
+    const okCount = practice.steps.filter((s) => s.status === 'ok').length;
+    if (okCount > this.lastArpeggioOkCount) this.playSuccess();
+    this.lastArpeggioOkCount = okCount;
+    if (practice.phase === 'complete' && practice.mastered && !this.lastArpeggioMastered) {
+      this.lastArpeggioMastered = true;
+      this.playFanfare();
+    }
 
     if (practice.phase === 'complete') {
       this.renderArpeggioDone(practice, chord);
@@ -460,6 +520,9 @@ export class ChordUi {
     chord: ChordDef,
     states: Partial<Record<StringNumber, StringState>>,
   ): void {
+    const key = `${chord.id}:${JSON.stringify(states)}`;
+    if (key === this.practiceDiagramKey) return;
+    this.practiceDiagramKey = key;
     this.els.practiceDiagram.innerHTML = chordDiagramSvg(chord, {
       highlight: states,
       scale: 0.85,
@@ -507,8 +570,12 @@ export class ChordUi {
     this.els.strumVerdict.textContent = 'Rasguea y mantenlo…';
     this.els.strumVerdict.dataset.state = 'idle';
     this.els.strumIssues.replaceChildren();
-    this.renderStrumLights(null);
+    this.els.strumProgressFill.style.width = '0%';
+    this.els.strumProgressFill.classList.remove('done', 'bad');
+    this.renderStrumDiagram(chord, {});
+    this.renderStrumLights(chord, {}, {});
     this.els.strumNext.hidden = true;
+    this.lastStrumVerdictSeq = 0;
     this.strumLearnedMarked.delete(chord.id);
   }
 
@@ -521,11 +588,23 @@ export class ChordUi {
       return;
     }
 
-    this.renderStrumLights(snapshot.analysis);
+    // Live transparency: the diagram and lights show what is being heard now.
+    this.renderStrumDiagram(chord, snapshot.liveStates);
+    this.renderStrumLights(chord, snapshot.liveStates, snapshot.stringScores);
+    this.els.strumProgressFill.style.width = `${Math.round(snapshot.progress * 100)}%`;
+
+    // One cue per published verdict (success chime / gentle "adjust" tone).
+    if (snapshot.verdictSeq > this.lastStrumVerdictSeq) {
+      this.lastStrumVerdictSeq = snapshot.verdictSeq;
+      if (snapshot.verdict === 'correct') this.playSuccess();
+      else if (snapshot.verdict === 'issues') this.playAdjust();
+    }
+
+    this.els.strumProgressFill.classList.toggle('done', snapshot.verdict === 'correct');
+    this.els.strumProgressFill.classList.toggle('bad', snapshot.verdict === 'issues');
 
     if (snapshot.stage === 'listening') {
-      const analyzing = snapshot.analysis !== null && snapshot.analysis.verdict !== 'quiet';
-      verdictEl.textContent = analyzing ? '…' : 'Rasguea y mantenlo…';
+      verdictEl.textContent = snapshot.progress > 0 ? 'Escuchando…' : 'Rasguea y mantenlo…';
       verdictEl.dataset.state = 'idle';
       this.els.strumIssues.replaceChildren();
       this.els.strumNext.hidden = true;
@@ -542,9 +621,12 @@ export class ChordUi {
         const next = chordById(this.lessonChordIds[this.lessonIndex + 1]);
         this.els.strumNext.textContent = `Siguiente: ${next?.displayName ?? ''}`;
       }
+      // Mark it as learned once the clean strum has been held a moment.
       if (snapshot.stableMs >= 1200 && !this.strumLearnedMarked.has(chord.id)) {
         this.strumLearnedMarked.add(chord.id);
         markChordLearned(this.storage, chord.id);
+        verdictEl.textContent += ' ✓ aprendido';
+        this.playFanfare();
         this.renderHome();
       }
       return;
@@ -559,27 +641,43 @@ export class ChordUi {
     this.els.strumIssues.replaceChildren(...lines.map((line) => el('li', 'strum-issue', line)));
   }
 
-  private renderStrumLights(analysis: StrumCheckResult | null): void {
-    const chord = this.currentChord;
-    if (!chord || !analysis) {
-      this.els.strumLights.replaceChildren();
-      return;
+  /** Light the chord diagram per string: green = sounds, red = the problem. */
+  private renderStrumDiagram(
+    chord: ChordDef,
+    liveStates: Readonly<Record<number, 'ok' | 'wrong'>>,
+  ): void {
+    const highlight: Partial<Record<StringNumber, StringState>> = {};
+    for (const [number, state] of Object.entries(liveStates)) {
+      highlight[Number(number) as StringNumber] = state;
     }
+    const key = `${chord.id}:${JSON.stringify(highlight)}`;
+    if (key === this.strumDiagramKey) return;
+    this.strumDiagramKey = key;
+    this.els.strumDiagram.innerHTML = chordDiagramSvg(chord, { highlight, scale: 0.62 });
+  }
+
+  /** Six light dots reflecting the aggregated per-string diagnosis. */
+  private renderStrumLights(
+    chord: ChordDef,
+    liveStates: Readonly<Record<number, 'ok' | 'wrong'>>,
+    stringScores: Readonly<Record<number, number>>,
+  ): void {
     const lights: HTMLElement[] = [];
-    for (const score of analysis.scores) {
-      const band = chord.strings.find((s) => s.number === score.stringNumber)!;
-      const light = el('div', `strum-light string-${score.stringNumber}`);
-      const cls =
-        band.fret === null
-          ? score.ringing
-            ? 'bad'
-            : 'muted'
-          : score.ringing
-            ? 'on'
-            : 'off';
-      light.classList.add(cls);
-      light.style.setProperty('--level', String(Math.max(0.15, Math.min(1, score.score))));
-      light.title = `${score.stringNumber}ª ${score.expectedLabel ?? ''}`;
+    for (const string of chord.strings) {
+      const light = el('div', `strum-light string-${string.number}`);
+      const state = liveStates[string.number];
+      const level = Math.max(0.15, Math.min(1, stringScores[string.number] ?? 0.15));
+      if (string.fret === null) {
+        light.classList.add(state === 'wrong' ? 'bad' : 'muted');
+      } else if (state === 'ok') {
+        light.classList.add('on');
+      } else if (state === 'wrong') {
+        light.classList.add('off');
+      } else {
+        light.classList.add('idle');
+      }
+      light.style.setProperty('--level', String(level));
+      light.title = `${string.number}ª`;
       lights.push(light);
     }
     this.els.strumLights.replaceChildren(...lights);

@@ -60,6 +60,24 @@ export function playTunedChime(ctx: AudioContext | null, options: ChimeOptions =
   }
 }
 
+/**
+ * Soft, low two-note "try again" tone for a wrong chord/strum. Deliberately
+ * gentle (and lower-pitched than the success chime) so it reads as guidance,
+ * not as an error buzzer.
+ */
+export function playAdjustTone(ctx: AudioContext | null, options: ChimeOptions = {}): void {
+  if (!ctx) return;
+  const volume = options.volume ?? 0.12;
+  try {
+    void ctx.resume?.();
+    const t0 = ctx.currentTime + 0.001;
+    bell(ctx, 392, t0, 0.28, volume); // G4
+    bell(ctx, 311.13, t0 + 0.14, 0.34, volume); // Eb4
+  } catch {
+    // Silent failure by design.
+  }
+}
+
 /** Ascending E-major triad when all strings are tuned. */
 export function playAllTunedFanfare(ctx: AudioContext | null, options: ChimeOptions = {}): void {
   if (!ctx) return;
