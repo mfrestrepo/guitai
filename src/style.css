@@ -2256,3 +2256,98 @@ details.chord-details .tip {
 .runner-tip + .runner-tip {
   margin-top: 4px;
 }
+
+/* ==========================================================================
+   Guided technique practice (module 4)
+   ========================================================================== */
+.technique-stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  justify-items: center;
+}
+
+@media (max-width: 640px) {
+  .technique-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.technique-fretboard svg {
+  max-width: 260px;
+  height: auto;
+}
+
+.fb-nut { fill: #3a4a5e; }
+.fb-fret, .fb-string { stroke: #3a4a5e; stroke-width: 1.5; }
+.fb-string-label, .fb-fret-number { fill: #8ea0b5; font-family: system-ui; font-size: 11px; }
+.fb-dot { fill: rgba(34, 211, 238, 0.25); stroke: rgba(34, 211, 238, 0.5); stroke-width: 1.5; }
+.fb-dot.current {
+  fill: #34d399;
+  stroke: #4ade80;
+  filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));
+  animation: guitai-pulse 1.2s ease-in-out infinite;
+}
+.fb-note { fill: #04120c; font-family: system-ui; font-size: 11px; font-weight: 800; }
+
+.technique-readout {
+  text-align: center;
+}
+
+.technique-current-note {
+  font-size: clamp(2.6rem, 10vw, 3.6rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--green);
+}
+
+.technique-next {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.technique-detected {
+  margin-top: 8px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  min-height: 1.2em;
+}
+
+.technique-slots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 12px 0 4px;
+}
+
+.technique-slot {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-elev);
+  color: var(--text-dim);
+}
+
+.technique-slot.ok {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.technique-slot.wrong {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.technique-result-detail {
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}

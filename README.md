@@ -3,12 +3,12 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-220%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-288%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
 
-Three modules live in this repository (switch with the tabs at the top):
+Four modules live in this repository (switch with the tabs at the top):
 
 1. **Afinador** — a real-time chromatic tuner (module 1).
 2. **Aprende acordes** — a progressive beginner course (module 2): each chord
@@ -16,6 +16,9 @@ Three modules live in this repository (switch with the tabs at the top):
    **validates live** whether you play it correctly (strum or string by string).
 3. **Cambios** — chord-change drills by difficulty (module 3), with an optional
    metronome (40–140 BPM), change counters and optional microphone validation.
+4. **Práctica** — guided technique practice (module 4): chromatic 1-2-3-4,
+   repeated-note alternation and one-octave scales, verified note by note with
+   honest metrics and an explicit tempo policy (+5/−5 BPM).
 
 ✨ **Highlights**
 
@@ -133,6 +136,38 @@ to a look-ahead audio scheduler. With 🎤 enabled, the microphone validates eve
 chord with the strum check, so a change only counts as **clean** when the chord
 really sounds right — and the diagram lights up red on the failing string.
 
+---
+
+## Module 4 — Práctica (guided technique)
+
+The first slice of the practice module derived from the technique research
+([`docs/research/technique_research.md`](docs/research/technique_research.md) →
+[`docs/technique-practice.md`](docs/technique-practice.md)):
+
+- **Cromáticos 1-2-3-4** (low/high strings and all six) — finger independence.
+- **Nota repetida** i-m and i-a — strict alternation and even attacks.
+- **Escalas** de una octava (Do mayor, Sol mayor, La menor) en primera posición.
+
+Each exercise has a **runner**: fretboard diagram showing where the next note
+lives, big current note, live "detected" feedback, metronome (optional, BPM
+40–140 remembered per exercise) and a pass summary. With 🎤 on, every note is
+compared to the expected sequence:
+
+- **accuracy** (correct notes), **intonation** (median |cents|),
+  **timing stability** (σ in ms vs. the metronome grid), **pauses** and retries;
+- a **pass** requires the exercise's exit criteria *and no pauses*;
+- one concrete **recommendation** per pass (count out loud, check pressure/tying,
+  isolate four notes, even out attacks, raise/lower tempo…);
+- the **tempo policy** is automatic: +5 BPM after 3 clean passes, −5 after 2
+  failed ones, and records are saved locally (including the working tempo, so a
+  session resumes where you left it).
+
+Honest limits (documented in the module): the analysis is monophonic, it
+verifies **notes** (not which finger/string was used), timing precision is in
+the tens of milliseconds — so the app reports relative stability and pauses
+rather than absolute studio-grade milliseconds — and posture/tension are not
+measurable with audio (rubrics will come in phase 2).
+
 ### Scripts
 
 | Command              | What it does                                              |
@@ -245,7 +280,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**220 tests in 27 files** — `npm test`:
+**288 tests in 36 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |
@@ -268,6 +303,14 @@ Core logic is kept free of the microphone and DOM so it is testable directly.
 | `chords/exerciseProgress.test.ts` | Best-score persistence + corrupt-data recovery            |
 | `audio/metronome.test.ts`   | Beat maths, accents, tempo changes, stop/restart              |
 | `ui/changesView.test.ts`    | Real `index.html` (jsdom): list, runner, metronome controls   |
+| `pitch/noteStream.test.ts`  | Timed note events: confirmation, retrigger, silence, flush    |
+| `technique/exercises.test.ts` | Exercise catalog, fretboard maths and tempo formulas        |
+| `technique/timingAnalysis.test.ts` | Timing mean/σ, rushing/dragging, pause runs           |
+| `technique/sequenceMatcher.test.ts` | Accuracy, cents, pauses, retries, tendencies        |
+| `technique/recommendations.test.ts` | Metric → concrete recommendation rules              |
+| `technique/techniqueSession.test.ts` | Passes, streaks, +5/−5 policy, records            |
+| `technique/syntheticPipeline.test.ts` | **Synthesized audio** → YIN → notes → metrics     |
+| `ui/techniqueView.test.ts`  | Real `index.html` (jsdom): list, runner, evaluation           |
 | `chords/syntheticSession.test.ts` | **Synthesized audio** through analyzer → events → practice |
 | `chords/copy.test.ts`       | Spanish wording built from data (diagram/how-to/feedback)     |
 | `chords/progress.test.ts`   | localStorage progress + corrupt-data recovery                 |
@@ -312,8 +355,8 @@ cents = 1200 · log₂(detectedHz / targetHz)
    thresholds (constants in `chords/strumCheck.ts`) to your setup.
 2. Expand the chord course: barre chords (F…), more levels and drills — each
    chord/drill is data in `chords/catalog.ts` / `chords/curriculum.ts`.
-3. Barre-chord level for the change exercises (F, Bm…) and per-exercise
-   history charts of changes-per-minute.
+3. Practice module phases 2–4: Giuliani arpeggios, session generator
+   (warm-up/focus/repertoire), progressive barre and progress history.
 4. Alternative tunings (Drop D is one line in `theory/tunings.ts`) and
    per-tab progress.
 5. Extract the audio analysis into an `AudioWorklet` if CPU matters on slower

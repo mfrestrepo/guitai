@@ -15,6 +15,7 @@
         <button type="button" class="nav-btn active" data-view="tuner">🎛️ Afinador</button>
         <button type="button" class="nav-btn" data-view="chords">🎸 Acordes</button>
         <button type="button" class="nav-btn" data-view="changes">🔄 Cambios</button>
+        <button type="button" class="nav-btn" data-view="practice">🎯 Práctica</button>
       </nav>
 
       <!-- ======================= MÓDULO 1 · AFINADOR ======================= -->
@@ -267,6 +268,93 @@
               <div class="practice-done-actions">
                 <button id="runner-repeat" class="btn btn-primary" type="button">Repetir</button>
                 <button id="runner-finish" class="btn btn-ghost" type="button">Lista</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== MÓDULO 4 · PRÁCTICA GUIADA ==================== -->
+      <section id="view-practice" hidden>
+        <div id="practice-home">
+          <div class="chords-head">
+            <div>
+              <h1 class="chords-title">Práctica</h1>
+              <p class="chords-tagline">Técnica guiada: cromáticos, alternancia y escalas</p>
+            </div>
+            <div class="chords-head-actions">
+              <button id="practice-sound-button" class="icon-btn" type="button" title="Sonido de confirmación" aria-pressed="true">🔔</button>
+            </div>
+          </div>
+          <div id="practice-levels" class="chord-levels"></div>
+        </div>
+
+        <div id="practice-runner" hidden>
+          <div class="lesson-top">
+            <button id="practice-back" class="btn btn-ghost back-btn" type="button" aria-label="Volver">&larr;</button>
+            <div class="lesson-title" id="practice-title"></div>
+            <div class="lesson-context" id="practice-context"></div>
+            <div class="lesson-top-spacer"></div>
+            <div class="chords-progress" id="practice-status">&mdash;</div>
+          </div>
+
+          <div class="card runner-card">
+            <div class="technique-stage">
+              <div id="technique-fretboard" class="technique-fretboard"></div>
+              <div class="technique-readout">
+                <div id="technique-current-note" class="technique-current-note">&mdash;</div>
+                <div class="technique-next">siguiente <span id="technique-next-note">—</span></div>
+                <div id="technique-detected" class="technique-detected"></div>
+              </div>
+            </div>
+
+            <div id="technique-slots" class="technique-slots" role="list"></div>
+
+            <div class="runner-counters">
+              <div class="counter">
+                <span class="counter-value" id="technique-accuracy">—</span>
+                <span class="counter-label">aciertos</span>
+              </div>
+              <div class="counter">
+                <span class="counter-value" id="technique-cents">—</span>
+                <span class="counter-label">cents</span>
+              </div>
+              <div class="counter">
+                <span class="counter-value" id="technique-timing">—</span>
+                <span class="counter-label">estabilidad</span>
+              </div>
+              <div class="counter">
+                <span class="counter-value" id="technique-best">—</span>
+                <span class="counter-label">récord</span>
+              </div>
+            </div>
+
+            <div class="runner-controls">
+              <button id="technique-start" class="btn btn-primary btn-big" type="button">▶ Empezar pase</button>
+              <button id="technique-stop" class="btn btn-secondary btn-big" type="button" hidden>■ Parar</button>
+            </div>
+
+            <div class="runner-metronome">
+              <button id="technique-metronome-toggle" class="icon-btn" type="button" title="Metrónomo" aria-pressed="true">⏱</button>
+              <div class="bpm-control">
+                <button id="technique-bpm-down" class="btn btn-ghost bpm-btn" type="button" aria-label="Bajar tempo">−</button>
+                <span class="bpm-value" id="technique-bpm-value">50</span>
+                <button id="technique-bpm-up" class="btn btn-ghost bpm-btn" type="button" aria-label="Subir tempo">+</button>
+                <span class="bpm-label">BPM</span>
+              </div>
+              <button id="technique-mic-toggle" class="icon-btn" type="button" title="Validar con micrófono" aria-pressed="true">🎤</button>
+              <span id="technique-mic-status" class="practice-mic-status"></span>
+            </div>
+
+            <ul id="technique-tips" class="runner-tips"></ul>
+
+            <div id="technique-result" class="practice-done" hidden>
+              <div id="technique-result-text" class="practice-done-text"></div>
+              <div id="technique-result-detail" class="technique-result-detail"></div>
+              <div class="practice-done-actions">
+                <button id="technique-next-pass" class="btn btn-primary" type="button">Siguiente pase →</button>
+                <button id="technique-finish" class="btn btn-ghost" type="button">Lista</button>
               </div>
             </div>
           </div>

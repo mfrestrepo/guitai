@@ -12,6 +12,7 @@ import { TunerEngine } from './tuner/engine';
 import { TunerView } from './ui/view';
 import { ChordUi } from './ui/chordView';
 import { ChangesUi } from './ui/changesView';
+import { TechniqueUi } from './ui/techniqueView';
 import { TUNINGS } from './theory/tunings';
 import { playAllTunedFanfare, playTunedChime } from './audio/chime';
 
@@ -20,7 +21,7 @@ if (!root) {
   throw new Error('GuitAI: #app root element missing from index.html.');
 }
 
-type ViewName = 'tuner' | 'chords' | 'changes';
+type ViewName = 'tuner' | 'chords' | 'changes' | 'practice';
 
 // ---- Module 1: tuner -------------------------------------------------------
 const SOUND_PREF_KEY = 'guitai.tuner.sound';
@@ -120,16 +121,34 @@ changesUi = new ChangesUi(root, {
 changesUi.setSoundEnabled(soundEnabled);
 changesUi.showHome();
 
+// ---- Module 4: guided technique practice ----------------------------------
+let techniqueUi!: TechniqueUi;
+techniqueUi = new TechniqueUi(root, {
+  isSoundEnabled: () => soundEnabled,
+  onToggleSound: () => {
+    soundEnabled = !soundEnabled;
+    saveSoundPref(soundEnabled);
+    tunerView.setSoundEnabled(soundEnabled);
+    chordUi.setSoundEnabled(soundEnabled);
+    changesUi.setSoundEnabled(soundEnabled);
+    techniqueUi.setSoundEnabled(soundEnabled);
+  },
+});
+techniqueUi.setSoundEnabled(soundEnabled);
+techniqueUi.showHome();
+
 // ---- Navigation ------------------------------------------------------------
 const tunerPanel = root.querySelector('#view-tuner') as HTMLElement;
 const chordsPanel = root.querySelector('#view-chords') as HTMLElement;
 const changesPanel = root.querySelector('#view-changes') as HTMLElement;
+const practicePanel = root.querySelector('#view-practice') as HTMLElement;
 const navButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('.nav-btn'));
 
 function showView(name: ViewName): void {
   tunerPanel.hidden = name !== 'tuner';
   chordsPanel.hidden = name !== 'chords';
   changesPanel.hidden = name !== 'changes';
+  practicePanel.hidden = name !== 'practice';
   for (const button of navButtons) {
     button.classList.toggle('active', button.dataset.view === name);
   }
@@ -137,13 +156,16 @@ function showView(name: ViewName): void {
   // Only one module may own the microphone at a time.
   if (name !== 'chords') chordUi.deactivate();
   if (name !== 'changes') changesUi.deactivate();
+  if (name !== 'practice') techniqueUi.deactivate();
   if (name !== 'tuner' && engine.statusSnapshot.phase === 'running') engine.stop();
 }
 
 for (const button of navButtons) {
   button.addEventListener('click', () => {
     const view = button.dataset.view;
-    if (view === 'tuner' || view === 'chords' || view === 'changes') showView(view);
+    if (view === 'tuner' || view === 'chords' || view === 'changes' || view === 'practice') {
+      showView(view);
+    }
   });
 }
 
@@ -153,5 +175,7 @@ const initial: ViewName =
     ? 'chords'
     : window.location.hash === '#changes'
       ? 'changes'
-      : 'tuner';
+      : window.location.hash === '#practice'
+        ? 'practice'
+        : 'tuner';
 showView(initial);
