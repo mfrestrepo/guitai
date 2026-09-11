@@ -49,6 +49,32 @@ almacenamiento/UI ya existentes.
 
 ---
 
+## 2.b Preparación, explicación y transparencia (v2)
+
+Tres mejoras que responden a problemas reales de uso:
+
+**Tiempo para prepararse.** El pase ya no empieza al pulsar el botón: primero se
+abre el micrófono (permiso + calentamiento) y después suena un **cuenta-atrás de
+4 tiempos** con número grande en pantalla; la rejilla del ejercicio arranca en el
+clic siguiente y se **alinea con el reloj de audio del metrónomo**, no con el
+reloj del navegador. Antes, el pase empezaba mientras el micrófono todavía se
+estaba abriendo, así que las primeras notas se perdían y el resultado parecía
+"no me escucha".
+
+**Explicación visual de cada ejercicio.** Antes de tocar, cada ejercicio muestra:
+su **objetivo** en una frase, **2–3 pasos** concretos, un **dibujo de la mano
+derecha** con los dedos que alternan (i-m, i-a), un **dibujo de la mano
+izquierda** con la numeración 1-2-3-4 y una viñeta de "una nota por clic". La
+lista de ejercicios añade un mini-diapasón y el objetivo de cada uno.
+
+**Transparencia de lo que se oye.** Durante el pase hay un **medidor de nivel del
+micrófono** y la última nota detectada con su desviación (`oí B3 +12 ¢`). Si hay
+sonido pero no se distingue la nota, o si no llega sonido, aparecen avisos
+concretos ("Te oigo, pero no distingo la nota…", "No te oigo…"). Además, todo el
+jargón (BPM, pase, cents, estabilidad, aciertos…) está en un **glosario**
+desplegable con explicaciones llanas, y cada contador tiene su explicación al
+pasar el ratón.
+
 ## 3. Cómo se verifica cada pasada
 
 1. El ejercicio declara sus **notas esperadas** (MIDI + cuerda + traste) y su
@@ -143,7 +169,10 @@ recogen automáticamente.
 | Récords y datos corruptos | `src/technique/techniqueProgress.test.ts` |
 | Sesión, rachas y política de tempo | `src/technique/techniqueSession.test.ts` |
 | **Audio sintético → métricas** | `src/technique/syntheticPipeline.test.ts` |
-| UI (lista, runner, toggles, evaluación, path sin micro) | `src/ui/techniqueView.test.ts` |
+| UI (lista, runner, toggles, count-in, glosario, evaluación, path sin micro) | `src/ui/techniqueView.test.ts` |
+| Sesión de micrófono (frames sintéticos → eventos de nota, nivel) | `src/technique/micSession.test.ts` |
+| Explicaciones y glosario completos | `src/technique/explanations.test.ts` |
+| Diagramas de manos | `src/ui/handDiagram.test.ts` |
 
 El test de audio sintético "toca" el ejercicio en el código: sintetiza las notas
 a tempo, pasa las ventanas por el analizador real y el detector real, y

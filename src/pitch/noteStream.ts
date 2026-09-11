@@ -72,7 +72,9 @@ interface BufferedFrame {
 type Phase = 'quiet' | 'arming' | 'sounding';
 
 const DEFAULTS: Required<NoteStreamOptions> = {
-  soundRms: 0.004,
+  // Kept equal to the shared silence gate so a softly played note (which YIN
+  // *does* detect) is not discarded later by a stricter level gate.
+  soundRms: 0.0025,
   confirmFrames: 2,
   confirmCents: 60,
   differentNoteCents: 60,

@@ -2351,3 +2351,267 @@ details.chord-details .tip {
   line-height: 1.5;
   margin-bottom: 12px;
 }
+
+/* ==========================================================================
+   Guided practice v2 — visual explanation, count-in, live feedback
+   ========================================================================== */
+.technique-intro {
+  margin-bottom: 14px;
+}
+
+.technique-intro-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.technique-intro-emoji {
+  font-size: 1.6rem;
+}
+
+.technique-intro-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+
+.technique-goal {
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+
+.technique-how {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.technique-how-step + .technique-how-step {
+  margin-top: 2px;
+}
+
+.technique-hands {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  border-top: 1px dashed var(--card-border);
+}
+
+.technique-hand {
+  text-align: center;
+}
+
+.technique-hand-caption {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: -4px;
+}
+
+.hand-svg {
+  width: 168px;
+  height: auto;
+}
+
+.hand-palm {
+  fill: rgba(34, 211, 238, 0.10);
+  stroke: rgba(34, 211, 238, 0.35);
+  stroke-width: 1.5;
+}
+
+.hand-finger {
+  fill: rgba(148, 163, 184, 0.22);
+  stroke: #64748b;
+  stroke-width: 1.5;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+.hand-finger.on {
+  fill: rgba(52, 211, 153, 0.55);
+  stroke: #4ade80;
+}
+
+.hand-thumb {
+  fill: rgba(148, 163, 184, 0.22);
+  stroke: #64748b;
+  stroke-width: 1.5;
+}
+
+.hand-thumb.on {
+  fill: rgba(52, 211, 153, 0.55);
+  stroke: #4ade80;
+}
+
+.hand-label {
+  fill: #8ea0b5;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hand-label.on {
+  fill: #4ade80;
+}
+
+.hand-caption {
+  fill: #8ea0b5;
+  font-family: system-ui;
+  font-size: 10px;
+}
+
+.click-svg {
+  width: 168px;
+  height: auto;
+}
+
+.click-dot {
+  fill: rgba(34, 211, 238, 0.35);
+  stroke: #22d3ee;
+  stroke-width: 2;
+}
+
+.click-note {
+  fill: rgba(52, 211, 153, 0.4);
+  stroke: #4ade80;
+  stroke-width: 2;
+}
+
+.click-arrow {
+  stroke: #8ea0b5;
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.click-label {
+  fill: #06121a;
+  font-family: system-ui;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ---------- card with mini fretboard ---------- */
+.exercise-card-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.exercise-mini {
+  flex: 0 0 auto;
+  width: 84px;
+  opacity: 0.9;
+}
+
+.exercise-mini svg {
+  width: 100%;
+  height: auto;
+}
+
+.exercise-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.exercise-goal {
+  font-size: 0.86rem;
+  color: var(--green);
+  line-height: 1.35;
+}
+
+/* ---------- runner: count-in and live feedback ---------- */
+.technique-fretboard-wrap {
+  position: relative;
+}
+
+.technique-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(3.4rem, 16vw, 5rem);
+  font-weight: 900;
+  color: var(--accent);
+  background: rgba(11, 15, 20, 0.72);
+  border-radius: 14px;
+  text-shadow: 0 0 26px rgba(34, 211, 238, 0.6);
+  animation: guitai-pulse 1s ease-in-out infinite;
+}
+
+.technique-countdown.go {
+  color: var(--green);
+  text-shadow: 0 0 26px rgba(52, 211, 153, 0.7);
+}
+
+.technique-expected-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+
+.technique-detected {
+  min-height: 1.3em;
+}
+
+.technique-detected[data-state='ok'] {
+  color: var(--green);
+}
+
+.technique-detected[data-state='wrong'] {
+  color: var(--red);
+}
+
+.technique-hint {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--amber);
+  line-height: 1.4;
+}
+
+.technique-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px auto 0;
+  max-width: 260px;
+}
+
+.technique-level .level-track {
+  flex: 1;
+}
+
+/* ---------- glossary ---------- */
+.technique-glossary {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+
+.glossary-item {
+  display: grid;
+  grid-template-columns: 24px minmax(70px, auto) 1fr;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.86rem;
+}
+
+.glossary-icon {
+  font-size: 0.95rem;
+}
+
+.glossary-term {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.glossary-meaning {
+  color: var(--text-dim);
+  line-height: 1.4;
+}

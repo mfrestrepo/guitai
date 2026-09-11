@@ -3,7 +3,7 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-288%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-305%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
@@ -148,9 +148,13 @@ The first slice of the practice module derived from the technique research
 - **Nota repetida** i-m and i-a — strict alternation and even attacks.
 - **Escalas** de una octava (Do mayor, Sol mayor, La menor) en primera posición.
 
-Each exercise has a **runner**: fretboard diagram showing where the next note
-lives, big current note, live "detected" feedback, metronome (optional, BPM
-40–140 remembered per exercise) and a pass summary. With 🎤 on, every note is
+Each exercise **explains itself visually** (goal, 2–3 steps, right-hand
+alternation diagram, left-hand finger numbers, "one note per click") and the
+runner gives **preparation time**: the microphone opens first and a 4-beat
+count-in precedes the grid, which is aligned to the metronome's audio clock.
+While playing, a **microphone level meter** and the last detected note
+(`oí B3 +12 ¢`) show what the app is hearing, with hints when it cannot tell;
+all jargon (BPM, pase, cents, estabilidad…) is defined in a glossary. With 🎤 on, every note is
 compared to the expected sequence:
 
 - **accuracy** (correct notes), **intonation** (median |cents|),
@@ -280,7 +284,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**288 tests in 36 files** — `npm test`:
+**305 tests in 39 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |

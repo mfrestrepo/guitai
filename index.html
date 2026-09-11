@@ -294,60 +294,97 @@
           <div class="lesson-top">
             <button id="practice-back" class="btn btn-ghost back-btn" type="button" aria-label="Volver">&larr;</button>
             <div class="lesson-title" id="practice-title"></div>
-            <div class="lesson-context" id="practice-context"></div>
             <div class="lesson-top-spacer"></div>
             <div class="chords-progress" id="practice-status">&mdash;</div>
           </div>
 
+          <!-- Explicación visual: qué busco, cómo se hace, manos -->
+          <section class="card technique-intro">
+            <div class="technique-intro-head">
+              <span class="technique-intro-emoji">🎯</span>
+              <div>
+                <div class="technique-intro-label">Qué busca este ejercicio</div>
+                <div class="technique-goal" id="technique-goal"></div>
+              </div>
+            </div>
+            <ol class="technique-how" id="technique-how"></ol>
+            <div class="technique-hands">
+              <div class="technique-hand">
+                <div id="technique-hand-right"></div>
+                <div class="technique-hand-caption">Mano derecha</div>
+              </div>
+              <div class="technique-hand">
+                <div id="technique-hand-left"></div>
+                <div class="technique-hand-caption">Mano izquierda</div>
+              </div>
+              <div class="technique-hand technique-hand-click">
+                <div id="technique-hand-click"></div>
+                <div class="technique-hand-caption">Una nota por clic</div>
+              </div>
+            </div>
+          </section>
+
           <div class="card runner-card">
             <div class="technique-stage">
-              <div id="technique-fretboard" class="technique-fretboard"></div>
+              <div class="technique-fretboard-wrap">
+                <div id="technique-fretboard" class="technique-fretboard"></div>
+                <div id="technique-countdown" class="technique-countdown" hidden></div>
+              </div>
               <div class="technique-readout">
+                <div class="technique-expected-label">toca ahora</div>
                 <div id="technique-current-note" class="technique-current-note">&mdash;</div>
-                <div class="technique-next">siguiente <span id="technique-next-note">—</span></div>
+                <div class="technique-next">después <span id="technique-next-note">—</span></div>
                 <div id="technique-detected" class="technique-detected"></div>
+                <div id="technique-hint" class="technique-hint"></div>
+                <div class="technique-level">
+                  <span class="field-label">micrófono</span>
+                  <div class="level-track"><div id="technique-level-fill" class="level-fill"></div></div>
+                </div>
               </div>
             </div>
 
             <div id="technique-slots" class="technique-slots" role="list"></div>
 
             <div class="runner-counters">
-              <div class="counter">
+              <div class="counter" title="Porcentaje de notas que sonaron en la nota correcta">
                 <span class="counter-value" id="technique-accuracy">—</span>
-                <span class="counter-label">aciertos</span>
+                <span class="counter-label">🎯 aciertos</span>
               </div>
-              <div class="counter">
+              <div class="counter" title="Desviación media de afinación, en centésimas de semitono (0 = afinado)">
                 <span class="counter-value" id="technique-cents">—</span>
-                <span class="counter-label">cents</span>
+                <span class="counter-label">🎚️ cents</span>
               </div>
-              <div class="counter">
+              <div class="counter" title="Cuánto te desvías del clic, en milisegundos. Menos es mejor.">
                 <span class="counter-value" id="technique-timing">—</span>
-                <span class="counter-label">estabilidad</span>
+                <span class="counter-label">📏 estabilidad</span>
               </div>
-              <div class="counter">
+              <div class="counter" title="Tu mejor tempo con un pase limpio">
                 <span class="counter-value" id="technique-best">—</span>
-                <span class="counter-label">récord</span>
+                <span class="counter-label">🏆 récord</span>
               </div>
             </div>
 
             <div class="runner-controls">
-              <button id="technique-start" class="btn btn-primary btn-big" type="button">▶ Empezar pase</button>
+              <button id="technique-start" class="btn btn-primary btn-big" type="button">▶ Empezar</button>
               <button id="technique-stop" class="btn btn-secondary btn-big" type="button" hidden>■ Parar</button>
             </div>
 
             <div class="runner-metronome">
-              <button id="technique-metronome-toggle" class="icon-btn" type="button" title="Metrónomo" aria-pressed="true">⏱</button>
-              <div class="bpm-control">
+              <button id="technique-metronome-toggle" class="icon-btn" type="button" title="Metrónomo (clic de tempo)" aria-pressed="true">⏱</button>
+              <div class="bpm-control" title="Clics por minuto: más BPM = más rápido">
                 <button id="technique-bpm-down" class="btn btn-ghost bpm-btn" type="button" aria-label="Bajar tempo">−</button>
                 <span class="bpm-value" id="technique-bpm-value">50</span>
                 <button id="technique-bpm-up" class="btn btn-ghost bpm-btn" type="button" aria-label="Subir tempo">+</button>
                 <span class="bpm-label">BPM</span>
               </div>
-              <button id="technique-mic-toggle" class="icon-btn" type="button" title="Validar con micrófono" aria-pressed="true">🎤</button>
+              <button id="technique-mic-toggle" class="icon-btn" type="button" title="Escuchar y corregir con el micrófono" aria-pressed="true">🎤</button>
               <span id="technique-mic-status" class="practice-mic-status"></span>
             </div>
 
-            <ul id="technique-tips" class="runner-tips"></ul>
+            <details id="technique-glossary" class="chord-details">
+              <summary>📖 ¿Qué significa…?</summary>
+              <div id="technique-glossary-body" class="technique-glossary"></div>
+            </details>
 
             <div id="technique-result" class="practice-done" hidden>
               <div id="technique-result-text" class="practice-done-text"></div>

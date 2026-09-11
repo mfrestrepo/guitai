@@ -54,7 +54,7 @@ describe('TechniqueUi', () => {
     expect(q('#practice-levels').textContent).toContain('Escala de Do mayor');
   });
 
-  it('opens a runner with the fretboard, current note and tips', () => {
+  it('opens a runner with the fretboard, current note and a visual explanation', () => {
     const { ui, q } = mount();
     expect(ui.openExercise('chromatic-low-strings')).toBe(true);
     expect(q('#practice-runner').hasAttribute('hidden')).toBe(false);
@@ -63,8 +63,38 @@ describe('TechniqueUi', () => {
     expect(q('#technique-fretboard').innerHTML).toContain('fb-dot');
     expect(q('#technique-current-note').textContent).toBe('F2'); // first note of the drill
     expect(q('#technique-next-note').textContent).toBe('F#2');
-    expect(q('#technique-tips').querySelectorAll('li').length).toBeGreaterThan(0);
     expect(q('#technique-bpm-value').textContent).toBe('50');
+
+    // The exercise explains itself: goal, steps and hand diagrams.
+    expect(q('#technique-goal').textContent!.length).toBeGreaterThan(15);
+    expect(q('#technique-how').querySelectorAll('li').length).toBeGreaterThanOrEqual(2);
+    expect(q('#technique-hand-right').innerHTML).toContain('hand-svg');
+    expect(q('#technique-hand-left').innerHTML).toContain('un dedo por traste');
+    expect(q('#technique-hand-click').innerHTML).toContain('click-svg');
+  });
+
+  it('defines the jargon in the glossary with plain language', () => {
+    const { q } = mount();
+    const items = q('#technique-glossary-body').querySelectorAll('.glossary-item');
+    expect(items.length).toBeGreaterThanOrEqual(8);
+    const text = q('#technique-glossary-body').textContent ?? '';
+    for (const term of ['BPM', 'Pase', 'i-m', 'Cents', 'Estabilidad']) {
+      expect(text).toContain(term);
+    }
+    expect(text.toLowerCase()).toContain('clics por minuto');
+  });
+
+  it('gives preparation time with a visible count-in before the grid starts', async () => {
+    const { ui, q } = mount();
+    ui.openExercise('chromatic-low-strings');
+    q<HTMLButtonElement>('#technique-start').click();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Without a metronome in jsdom, the visual count-in runs: the grid has NOT
+    // started yet, which is exactly the preparation time the learner asked for.
+    expect(q('#technique-countdown').hasAttribute('hidden')).toBe(false);
+    expect(['4', '3', '2', '1']).toContain(q('#technique-countdown').textContent);
+    expect(ui.currentSession()!.isPassing).toBe(false);
+    expect(q('#practice-status').textContent).toContain('prepárate');
   });
 
   it('keeps the metronome and microphone toggles optional and remembered', () => {
@@ -99,9 +129,10 @@ describe('TechniqueUi', () => {
     q<HTMLButtonElement>('#technique-start').click();
     // Let the (failing) getUserMedia attempt settle, then force the running
     // state through the test hook — otherwise the pending rejection would
-    // overwrite it.
+    // overwrite it. Then skip the count-in to test the pass evaluation itself.
     await new Promise((resolve) => setTimeout(resolve, 30));
     ui.beginMicSession();
+    ui.beginPassImmediately(base);
 
     // Play every note perfectly at 50 BPM (step = 1000 ms).
     exercise.notes.forEach((note, slot) => {
@@ -126,6 +157,7 @@ describe('TechniqueUi', () => {
     await new Promise((resolve) => setTimeout(resolve, 30));
     // jsdom has no getUserMedia → the mic errored, so no scoring is claimed.
     expect(q('#technique-mic-status').textContent).toContain('No se pudo');
+    ui.beginPassImmediately();
     ui.simulatePassEnd();
     expect(q('#technique-result-text').textContent).toContain('Práctica libre');
     expect(q('#technique-result-detail').textContent).toContain('🎤');
