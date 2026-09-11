@@ -61,9 +61,14 @@ describe('TechniqueUi', () => {
     expect(q('#practice-title').textContent).toContain('Cromático');
     expect(q('#technique-fretboard').innerHTML).toContain('<svg');
     expect(q('#technique-fretboard').innerHTML).toContain('fb-dot');
-    expect(q('#technique-current-note').textContent).toBe('F2'); // first note of the drill
-    expect(q('#technique-next-note').textContent).toBe('F#2');
+    // The instruction speaks the learner's language, not note names.
+    expect(q('#technique-current-note').textContent).toContain('Dedo 1 (índice)');
+    expect(q('#technique-current-note').textContent).toContain('traste 1');
+    expect(q('#technique-current-note').textContent).toContain('6ª');
+    expect(q('#technique-note-chip').textContent).toContain('Nota F2');
+    expect(q('#technique-next-note').textContent).toContain('T2');
     expect(q('#technique-bpm-value').textContent).toBe('50');
+    expect(q('#technique-legend').textContent).toContain('más fina');
 
     // The exercise explains itself: goal, steps and hand diagrams.
     expect(q('#technique-goal').textContent!.length).toBeGreaterThan(15);
@@ -71,6 +76,30 @@ describe('TechniqueUi', () => {
     expect(q('#technique-hand-right').innerHTML).toContain('hand-svg');
     expect(q('#technique-hand-left').innerHTML).toContain('un dedo por traste');
     expect(q('#technique-hand-click').innerHTML).toContain('click-svg');
+  });
+
+  it('shows a visual "how to start" guide before the first pass', () => {
+    const { ui, q } = mount();
+    ui.openExercise('chromatic-low-strings');
+    expect(q('#technique-guide').hasAttribute('hidden')).toBe(false);
+    expect(q('#technique-guide').textContent).toContain('Cómo empezar');
+    expect(q('#technique-guide').querySelectorAll('.guide-step').length).toBe(4);
+    expect(q('#technique-guide').textContent).toContain('4 clics');
+    expect(q('#technique-guide').textContent).toContain('¡ya!');
+  });
+
+  it('offers a "test the microphone" mode that shows what it hears', async () => {
+    const { ui, q } = mount();
+    ui.openExercise('chromatic-low-strings');
+    const listen = q<HTMLButtonElement>('#technique-listen');
+    expect(listen.textContent).toContain('Probar micrófono');
+    listen.click();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // In jsdom the mic cannot open, but the mode is clearly signalled.
+    expect(listen.textContent).toContain('Parar prueba');
+    expect(q('#technique-hint').textContent).not.toBe('');
+    listen.click();
+    expect(listen.textContent).toContain('Probar micrófono');
   });
 
   it('defines the jargon in the glossary with plain language', () => {
@@ -148,6 +177,9 @@ describe('TechniqueUi', () => {
     expect(q('#technique-fretboard').innerHTML).toContain('<svg');
     const okChips = q('#technique-slots').querySelectorAll('.technique-slot.ok');
     expect(okChips.length).toBe(exercise.notes.length);
+    // Result chips also speak in string/fret/finger, not note names.
+    expect(okChips[0].textContent).toContain('6ª');
+    expect(okChips[0].getAttribute('title')).toContain('F2');
   });
 
   it('shows the free-practice message when the microphone is not available', async () => {

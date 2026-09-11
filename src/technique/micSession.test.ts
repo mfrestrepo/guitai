@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { synthesizeTone } from '../testing/synth';
-import { TechniqueMicSession } from './micSession';
+import { TechniqueMicSession, TECHNIQUE_FFT_SIZE } from './micSession';
 import type { DetectedNote } from './sequenceMatcher';
 
 const SR = 44100;
-const FRAME = 2048;
+const FRAME = TECHNIQUE_FFT_SIZE;
 
 function toneFrame(frequency: number, amplitude = 0.3): Float32Array {
   return synthesizeTone({

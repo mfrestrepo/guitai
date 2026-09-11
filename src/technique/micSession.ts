@@ -14,11 +14,19 @@ import type { DetectedNote } from './sequenceMatcher';
 
 export type TechniqueMicPhase = 'idle' | 'starting' | 'running' | 'error';
 
-/** Analysis cadence: fast enough to time notes against the metronome grid. */
-export const TECHNIQUE_TICK_MS = 16;
+/**
+ * Analysis cadence. 24 ms is precise enough to compare onsets with the
+ * metronome grid while keeping the CPU cost of the (much more reliable) 4096
+ * window at a level the tuner already proves works on real machines.
+ */
+export const TECHNIQUE_TICK_MS = 24;
 
-/** Smaller window than the tuner: better onset timing for scales/cromáticos. */
-export const TECHNIQUE_FFT_SIZE = 2048;
+/**
+ * Same window length as the tuner: 4096 samples (~93 ms) gives YIN several
+ * periods of the lowest notes of these exercises, which is what makes the
+ * difference with a real microphone. A 2048 window was too short in practice.
+ */
+export const TECHNIQUE_FFT_SIZE = 4096;
 
 export interface TechniqueMicCallbacks {
   onNote(note: DetectedNote): void;

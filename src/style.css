@@ -2615,3 +2615,86 @@ details.chord-details .tip {
   color: var(--text-dim);
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   Guided practice v3 — beginner instructions, start guide, mic test
+   ========================================================================== */
+.technique-position {
+  font-size: clamp(1.15rem, 4.4vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text);
+  max-width: 24ch;
+  margin: 0 auto;
+}
+
+.technique-note-chip {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--card-border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.technique-legend {
+  margin: 12px 0 0;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+/* ---------- how to start ---------- */
+.technique-guide {
+  margin-bottom: 14px;
+}
+
+.technique-guide-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 10px;
+}
+
+.guide-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+
+.guide-step + .guide-step {
+  border-top: 1px dashed var(--card-border);
+}
+
+.guide-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  width: 30px;
+  text-align: center;
+  flex: none;
+}
+
+.guide-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.guide-title {
+  font-weight: 700;
+}
+
+.guide-detail {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* ---------- mic test button ---------- */
+#technique-listen {
+  margin-top: 10px;
+  width: 100%;
+}

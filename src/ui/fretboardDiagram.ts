@@ -65,7 +65,9 @@ export function fretboardSvg(exercise: TechniqueExercise, options: FretboardOpti
       `<text class="fb-string-label" x="${xx}" y="${PAD_TOP - 10}" text-anchor="middle">${stringNumber}</text>`,
     );
   }
-  // Positions.
+  // Positions. Non-current dots show the left-hand finger number (so the whole
+  // pattern reads as 1-2-3-4…); the current dot is bigger and shows its finger
+  // (or the note name when the exercise has no fingering).
   for (const position of positions) {
     const isCurrent =
       options.current !== null &&
@@ -75,9 +77,13 @@ export function fretboardSvg(exercise: TechniqueExercise, options: FretboardOpti
     const xx = x(position.stringNumber);
     const yy = y(position.fret);
     parts.push(
-      `<circle class="fb-dot${isCurrent ? ' current' : ''}" cx="${xx}" cy="${yy}" r="${isCurrent ? 13 : 9}"/>`,
+      `<circle class="fb-dot${isCurrent ? ' current' : ''}" cx="${xx}" cy="${yy}" r="${isCurrent ? 14 : 9}"/>`,
     );
-    if (showLabels && isCurrent) {
+    if (position.finger !== undefined) {
+      parts.push(
+        `<text class="fb-finger${isCurrent ? ' current' : ''}" x="${xx}" y="${yy + 4}" text-anchor="middle">${position.finger}</text>`,
+      );
+    } else if (isCurrent && showLabels) {
       parts.push(
         `<text class="fb-note" x="${xx}" y="${yy + 4}" text-anchor="middle">${midiToNoteName(position.midi)}</text>`,
       );
@@ -88,16 +94,25 @@ export function fretboardSvg(exercise: TechniqueExercise, options: FretboardOpti
 }
 
 /** Unique string/fret positions of an exercise (order preserved). */
-export function uniquePositions(
-  exercise: TechniqueExercise,
-): { stringNumber: StringNumber; fret: number; midi: number }[] {
+export function uniquePositions(exercise: TechniqueExercise): {
+  stringNumber: StringNumber;
+  fret: number;
+  midi: number;
+  finger?: 1 | 2 | 3 | 4;
+}[] {
   const seen = new Set<string>();
-  const result: { stringNumber: StringNumber; fret: number; midi: number }[] = [];
+  const result: { stringNumber: StringNumber; fret: number; midi: number; finger?: 1 | 2 | 3 | 4 }[] =
+    [];
   for (const note of exercise.notes) {
     const key = `${note.stringNumber}:${note.fret}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    result.push({ stringNumber: note.stringNumber, fret: note.fret, midi: note.midi });
+    result.push({
+      stringNumber: note.stringNumber,
+      fret: note.fret,
+      midi: note.midi,
+      finger: note.finger,
+    });
   }
   return result;
 }

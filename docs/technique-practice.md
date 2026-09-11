@@ -75,6 +75,35 @@ jargón (BPM, pase, cents, estabilidad, aciertos…) está en un **glosario**
 desplegable con explicaciones llanas, y cada contador tiene su explicación al
 pasar el ratón.
 
+## 2.c Lenguaje de principiante y detección fiable (v3)
+
+**Las instrucciones hablan como un profesor, no como una partitura.** La nota
+principal de cada paso se muestra como posición:
+
+- `Dedo 1 (índice) · traste 1 · cuerda 6ª (la más gruesa)` para notas pisadas;
+- `Cuerda 2ª al aire (sin pisar)` para cuerdas al aire;
+- el **nombre de la nota** (`Nota F2`) queda como información secundaria y los
+  chips del resultado usan la forma corta (`6ª · T1 · D1`);
+- el diapasón dibuja el **número de dedo dentro de cada punto**, así el patrón
+  1-2-3-4 se lee de un vistazo, y una leyenda recuerda cuál es la cuerda 1 y
+  cuál la 6.
+
+**Cómo empezar** se explica en una tarjeta visual de 4 pasos (coge la guitarra →
+pulsa Empezar → espera 4 clics → empieza en «¡ya!») que permanece visible hasta
+el primer pase.
+
+**Probar micrófono** (🎤): un modo de escucha libre que muestra en vivo
+cualquier nota que el micrófono oiga (`te oigo: G3 (196 Hz)`), para comprobar el
+montaje antes de empezar. Si el micrófono no puede abrirse, se explica qué hacer.
+
+**Detección más fiable.** La práctica analiza ahora ventanas de **4096 muestras**
+(≈93 ms, la misma que el afinador, que da a YIN varias cuerdas de margen en las
+notas graves) a **24 ms** de cadencia. Con 2048 muestras la estimación era
+demasiado frágil con micrófono real. Además el umbral de sonido quedó alineado
+con la puerta de silencio común (0,0025 RMS) para no descartar notas tocadas
+suave, y el runner muestra **medidor de nivel**, la nota oída con su desviación
+y avisos concretos cuando hay sonido pero no se distingue la nota.
+
 ## 3. Cómo se verifica cada pasada
 
 1. El ejercicio declara sus **notas esperadas** (MIDI + cuerda + traste) y su
@@ -172,6 +201,8 @@ recogen automáticamente.
 | UI (lista, runner, toggles, count-in, glosario, evaluación, path sin micro) | `src/ui/techniqueView.test.ts` |
 | Sesión de micrófono (frames sintéticos → eventos de nota, nivel) | `src/technique/micSession.test.ts` |
 | Explicaciones y glosario completos | `src/technique/explanations.test.ts` |
+| Instrucciones de principiante (dedo/traste/cuerda) y guía de inicio | `src/technique/instructions.test.ts` |
+| Diapasón con números de dedo y posición actual | `src/ui/fretboardDiagram.test.ts` |
 | Diagramas de manos | `src/ui/handDiagram.test.ts` |
 
 El test de audio sintético "toca" el ejercicio en el código: sintetiza las notas

@@ -27,6 +27,11 @@ export interface ExerciseNote {
   readonly midi: number;
   readonly stringNumber: StringNumber;
   readonly fret: number;
+  /**
+   * Left-hand finger (1 = índice … 4 = meñique). Undefined for open strings and
+   * when the exercise does not prescribe a fingering.
+   */
+  readonly finger?: 1 | 2 | 3 | 4;
 }
 
 export interface ExerciseCriteria {
@@ -80,8 +85,12 @@ export function midiForPosition(stringNumber: StringNumber, fret: number): numbe
   return OPEN_MIDI[stringNumber] + fret;
 }
 
-export function noteAt(stringNumber: StringNumber, fret: number): ExerciseNote {
-  return { midi: midiForPosition(stringNumber, fret), stringNumber, fret };
+export function noteAt(
+  stringNumber: StringNumber,
+  fret: number,
+  finger?: 1 | 2 | 3 | 4,
+): ExerciseNote {
+  return { midi: midiForPosition(stringNumber, fret), stringNumber, fret, finger };
 }
 
 /** "C3", "F#4"… for an exercise note. */
@@ -93,18 +102,23 @@ export function exerciseNoteLabel(note: ExerciseNote): string {
 /* Sequence builders                                                    */
 /* ------------------------------------------------------------------ */
 
-/** Chromatic 1-2-3-4 on the given strings (frets 1..4), one string at a time. */
+/**
+ * Chromatic 1-2-3-4 on the given strings (frets 1..4), one string at a time.
+ * The finger matches the fret: 1-índice, 2-medio, 3-anular, 4-meñique.
+ */
 function chromaticOn(strings: readonly StringNumber[]): ExerciseNote[] {
   const notes: ExerciseNote[] = [];
   for (const stringNumber of strings) {
-    for (const fret of [1, 2, 3, 4]) notes.push(noteAt(stringNumber, fret));
+    for (const fret of [1, 2, 3, 4] as const) notes.push(noteAt(stringNumber, fret, fret));
   }
   return notes;
 }
 
-/** A scale given as positions up, then mirrored back down (without repeating the top). */
-function scaleUpAndDown(positions: readonly [StringNumber, number][]): ExerciseNote[] {
-  const notes = positions.map(([stringNumber, fret]) => noteAt(stringNumber, fret));
+/** A scale given as (string, fret, finger) up, then mirrored back down. */
+function scaleUpAndDown(
+  positions: readonly [StringNumber, number, (1 | 2 | 3 | 4)?][],
+): ExerciseNote[] {
+  const notes = positions.map(([stringNumber, fret, finger]) => noteAt(stringNumber, fret, finger));
   const back = [...notes].reverse().slice(1);
   return [...notes, ...back];
 }
@@ -148,7 +162,7 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
     title: 'Cromático 1-2-3-4 · cuerdas 6-5-4',
     kind: 'chromatic',
     level: 'inicial',
-    descriptionEs: 'Un dedo por traste, subiendo en las cuerdas graves. La base de la independencia.',
+    descriptionEs: 'Pon los dedos 1-2-3-4 en los trastes 1-2-3-4 de las cuerdas 6ª, 5ª y 4ª, una cuerda cada vez.',
     notes: chromaticOn([6, 5, 4]),
     startBpm: 50,
     targetBpm: 80,
@@ -166,7 +180,7 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
     title: 'Cromático 1-2-3-4 · cuerdas 3-2-1',
     kind: 'chromatic',
     level: 'inicial',
-    descriptionEs: 'El mismo ejercicio en las cuerdas agudas, donde el anular y el meñique se revelan.',
+    descriptionEs: 'Lo mismo en las cuerdas 3ª, 2ª y 1ª: aquí cuestan más el anular y el meñique.',
     notes: chromaticOn([3, 2, 1]),
     startBpm: 50,
     targetBpm: 80,
@@ -183,7 +197,7 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
     title: 'Cromático 1-2-3-4 · todas las cuerdas',
     kind: 'chromatic',
     level: 'basico',
-    descriptionEs: 'Recorrido completo de la 6ª a la 1ª. 24 notas sin parar.',
+    descriptionEs: 'De la 6ª cuerda a la 1ª sin parar: 24 notas con los dedos 1-2-3-4.',
     notes: chromaticOn([6, 5, 4, 3, 2, 1]),
     startBpm: 50,
     targetBpm: 90,
@@ -197,10 +211,10 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
   },
   {
     id: 'repeated-note-i-m',
-    title: 'Nota repetida · alternancia i-m',
+    title: 'Nota repetida · índice y medio (i-m)',
     kind: 'repeated-note',
     level: 'inicial',
-    descriptionEs: 'Ocho notas iguales en la 2ª cuerda al aire, alternando índice y medio.',
+    descriptionEs: 'Toca 8 veces la 2ª cuerda al aire alternando índice y medio (i-m).',
     notes: repeated(2, 0, 8),
     startBpm: 60,
     targetBpm: 100,
@@ -215,10 +229,10 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
   },
   {
     id: 'repeated-note-i-a',
-    title: 'Nota repetida · alternancia i-a',
+    title: 'Nota repetida · índice y anular (i-a)',
     kind: 'repeated-note',
     level: 'basico',
-    descriptionEs: 'Índice y anular alternos: el anular necesita su propio entrenamiento.',
+    descriptionEs: 'Toca 8 veces la 1ª cuerda al aire alternando índice y anular (i-a).',
     notes: repeated(1, 0, 8),
     startBpm: 55,
     targetBpm: 90,
@@ -235,16 +249,16 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
     title: 'Escala de Do mayor · 1 octava',
     kind: 'scale',
     level: 'basico',
-    descriptionEs: 'Do mayor en primera posición, subiendo y bajando.',
+    descriptionEs: 'Sube y baja una octava de Do mayor desde el traste 3 de la 5ª cuerda.',
     notes: scaleUpAndDown([
-      [5, 3], // C3
-      [4, 0], // D3
-      [4, 2], // E3
-      [4, 3], // F3
-      [3, 0], // G3
-      [3, 2], // A3
-      [2, 0], // B3
-      [2, 1], // C4
+      [5, 3, 3], // C3 · dedo 3 (anular)
+      [4, 0], // D3 · al aire
+      [4, 2, 2], // E3 · dedo 2 (medio)
+      [4, 3, 3], // F3 · dedo 3 (anular)
+      [3, 0], // G3 · al aire
+      [3, 2, 2], // A3 · dedo 2 (medio)
+      [2, 0], // B3 · al aire
+      [2, 1, 1], // C4 · dedo 1 (índice)
     ]),
     startBpm: 50,
     targetBpm: 80,
@@ -262,16 +276,16 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
     title: 'Escala de Sol mayor · 1 octava',
     kind: 'scale',
     level: 'basico',
-    descriptionEs: 'Sol mayor con el fa# en la 1ª cuerda: primer accidente de la mano izquierda.',
+    descriptionEs: 'Sube y baja una octava de Sol mayor, con el fa# en el traste 2 de la 1ª cuerda.',
     notes: scaleUpAndDown([
-      [3, 0], // G3
-      [3, 2], // A3
-      [2, 0], // B3
-      [2, 1], // C4
-      [2, 3], // D4
-      [1, 0], // E4
-      [1, 2], // F#4
-      [1, 3], // G4
+      [3, 0], // G3 · al aire
+      [3, 2, 2], // A3 · dedo 2
+      [2, 0], // B3 · al aire
+      [2, 1, 1], // C4 · dedo 1
+      [2, 3, 3], // D4 · dedo 3
+      [1, 0], // E4 · al aire
+      [1, 2, 2], // F#4 · dedo 2
+      [1, 3, 3], // G4 · dedo 3
     ]),
     startBpm: 50,
     targetBpm: 75,
@@ -288,16 +302,16 @@ export const TECHNIQUE_EXERCISES: readonly TechniqueExercise[] = [
     title: 'Escala de La menor · 1 octava',
     kind: 'scale',
     level: 'intermedio',
-    descriptionEs: 'La menor natural en primera posición, con extensión al traste 5.',
+    descriptionEs: 'Sube y baja una octava de La menor, con una extensión hasta el traste 5.',
     notes: scaleUpAndDown([
-      [3, 2], // A3
-      [2, 0], // B3
-      [2, 1], // C4
-      [2, 3], // D4
-      [1, 0], // E4
-      [1, 1], // F4
-      [1, 3], // G4
-      [1, 5], // A4
+      [3, 2, 2], // A3 · dedo 2
+      [2, 0], // B3 · al aire
+      [2, 1, 1], // C4 · dedo 1
+      [2, 3, 3], // D4 · dedo 3
+      [1, 0], // E4 · al aire
+      [1, 1, 1], // F4 · dedo 1
+      [1, 3, 3], // G4 · dedo 3
+      [1, 5, 4], // A4 · dedo 4
     ]),
     startBpm: 50,
     targetBpm: 75,
@@ -355,6 +369,12 @@ for (const exercise of TECHNIQUE_EXERCISES) {
     }
     if (note.fret < 0 || note.fret > 15) {
       throw new Error(`Technique exercise "${exercise.id}": invalid fret ${note.fret}.`);
+    }
+    if (note.finger !== undefined && (note.finger < 1 || note.finger > 4)) {
+      throw new Error(`Technique exercise "${exercise.id}": invalid finger ${note.finger}.`);
+    }
+    if (note.fret === 0 && note.finger !== undefined) {
+      throw new Error(`Technique exercise "${exercise.id}": open strings cannot have a finger.`);
     }
     const expected = midiForPosition(note.stringNumber, note.fret);
     if (note.midi !== expected) {

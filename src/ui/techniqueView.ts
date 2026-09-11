@@ -21,6 +21,11 @@ import {
 } from '../technique/exercises';
 import { explanationFor, TECHNIQUE_GLOSSARY } from '../technique/explanations';
 import {
+  STRING_LEGEND_ES,
+  TECHNIQUE_START_GUIDE,
+  instructionForNote,
+} from '../technique/instructions';
+import {
   TechniqueSession,
   type TechniquePassOutcome,
   type TechniqueSnapshot,
@@ -53,6 +58,7 @@ interface RunnerElements {
   fretboard: HTMLElement;
   countdown: HTMLElement;
   currentNote: HTMLElement;
+  noteChip: HTMLElement;
   nextNote: HTMLElement;
   detected: HTMLElement;
   hint: HTMLElement;
@@ -111,6 +117,9 @@ export class TechniqueUi {
     handLeft: HTMLElement;
     handClick: HTMLElement;
     glossaryBody: HTMLElement;
+    guide: HTMLElement;
+    listen: HTMLButtonElement;
+    legend: HTMLElement;
   };
 
   private exercise: TechniqueExercise | null = null;
@@ -137,6 +146,8 @@ export class TechniqueUi {
   private level = 0;
   private lastNoteAtMs = 0;
   private hintText = '';
+  /** Free-listening mode: show any note the mic hears, without evaluating. */
+  private listening = false;
 
   constructor(root: ParentNode, callbacks: TechniqueUiCallbacks) {
     this.callbacks = callbacks;
@@ -158,9 +169,13 @@ export class TechniqueUi {
       handLeft: mustGet(root, '#technique-hand-left'),
       handClick: mustGet(root, '#technique-hand-click'),
       glossaryBody: mustGet(root, '#technique-glossary-body'),
+      guide: mustGet(root, '#technique-guide'),
+      listen: mustGet<HTMLButtonElement>(root, '#technique-listen'),
+      legend: mustGet(root, '#technique-legend'),
       fretboard: mustGet(root, '#technique-fretboard'),
       countdown: mustGet(root, '#technique-countdown'),
       currentNote: mustGet(root, '#technique-current-note'),
+      noteChip: mustGet(root, '#technique-note-chip'),
       nextNote: mustGet(root, '#technique-next-note'),
       detected: mustGet(root, '#technique-detected'),
       hint: mustGet(root, '#technique-hint'),
@@ -210,8 +225,10 @@ export class TechniqueUi {
     });
     this.els.bpmDown.addEventListener('click', () => this.changeBpm(-5));
     this.els.bpmUp.addEventListener('click', () => this.changeBpm(+5));
+    this.els.listen.addEventListener('click', () => void this.toggleListen());
 
     this.renderGlossary();
+    this.els.legend.textContent = STRING_LEGEND_ES;
   }
 
   setSoundEnabled(enabled: boolean): void {
@@ -319,8 +336,12 @@ export class TechniqueUi {
     this.bpm = this.session.snapshot().bpm; // may resume higher from the record
 
     this.phase = 'idle';
+    this.listening = false;
+    this.els.listen.textContent = '🎤 Probar micrófono';
     this.els.result.hidden = true;
     this.els.countdown.hidden = true;
+    this.renderGuide();
+    this.els.guide.hidden = false;
     this.renderControls();
     this.renderIdleReadout();
   }
@@ -331,6 +352,8 @@ export class TechniqueUi {
    */
   private async startPass(): Promise<void> {
     if (!this.exercise || !this.session) return;
+    this.stopListen();
+    this.els.guide.hidden = true;
     this.clearCountdownTimers();
     this.els.result.hidden = true;
     this.phase = 'arming';
@@ -431,6 +454,8 @@ export class TechniqueUi {
     this.micRunning = false;
     this.session?.stop();
     this.phase = 'idle';
+    this.listening = false;
+    this.els.listen.textContent = '🎤 Probar micrófono';
     this.els.countdown.hidden = true;
     this.els.levelFill.style.width = '0%';
     this.setHint('');
@@ -496,6 +521,15 @@ export class TechniqueUi {
 
   private onDetectedNote(note: DetectedNote): void {
     this.lastNoteAtMs = Date.now();
+    if (this.listening && this.phase !== 'passing') {
+      // Free-listening mode: show *any* note the microphone hears, so the
+      // learner can verify the setup before starting the exercise.
+      const name = midiToNoteName(frequencyToMidi(note.frequency));
+      this.els.detected.textContent = `te oigo: ${name} (${note.frequency.toFixed(0)} Hz)`;
+      this.els.detected.dataset.state = 'ok';
+      this.setHint('');
+      return;
+    }
     if (this.phase !== 'passing') return;
     // Ignore notes that were already ringing before the grid started.
     if (note.startMs < this.gridStartMs - 30) return;
@@ -577,10 +611,14 @@ export class TechniqueUi {
     const exercise = this.exercise;
     if (!exercise) return;
     const first = exercise.notes[0];
+    const firstInstruction = instructionForNote(first);
     this.els.fretboard.innerHTML = fretboardSvg(exercise, { current: first });
-    this.els.currentNote.textContent = midiToNoteName(first.midi);
-    this.els.nextNote.textContent = exercise.notes[1] ? midiToNoteName(exercise.notes[1].midi) : '—';
-    this.els.detected.textContent = 'Pulsa "Empezar"';
+    this.els.currentNote.textContent = firstInstruction.primary;
+    this.els.noteChip.textContent = firstInstruction.secondary;
+    this.els.nextNote.textContent = exercise.notes[1]
+      ? instructionForNote(exercise.notes[1]).short
+      : '—';
+    this.els.detected.textContent = 'Pulsa "Empezar" para empezar';
     this.els.detected.dataset.state = 'idle';
     this.els.accuracy.textContent = '—';
     this.els.cents.textContent = '—';
@@ -612,10 +650,13 @@ export class TechniqueUi {
     const slot = Math.min(exercise.notes.length - 1, Math.floor(snapshot.elapsedMs / stepMs));
     const note = exercise.notes[slot];
 
+    const instruction = instructionForNote(note);
     this.els.fretboard.innerHTML = fretboardSvg(exercise, { current: note });
-    this.els.currentNote.textContent = midiToNoteName(note.midi);
-    this.els.nextNote.textContent =
-      exercise.notes[slot + 1] ? midiToNoteName(exercise.notes[slot + 1].midi) : '—';
+    this.els.currentNote.textContent = instruction.primary;
+    this.els.noteChip.textContent = instruction.secondary;
+    this.els.nextNote.textContent = exercise.notes[slot + 1]
+      ? instructionForNote(exercise.notes[slot + 1]).short
+      : '—';
   }
 
   private renderLiveNote(note: DetectedNote): void {
@@ -667,14 +708,64 @@ export class TechniqueUi {
   private renderSlots(
     slots: readonly { expectedLabel: string; correct: boolean; cents: number | null }[],
   ): void {
+    const exercise = this.exercise;
     this.els.slots.replaceChildren(
-      ...slots.map((slot) => {
+      ...slots.map((slot, index) => {
+        // Chips speak the learner's language: "6ª · T1 · D1", not "F2".
+        const expected = exercise?.notes[index];
+        const short = expected ? instructionForNote(expected).short : slot.expectedLabel;
         const chip = el('span', `technique-slot ${slot.correct ? 'ok' : 'wrong'}`);
-        chip.textContent = slot.expectedLabel;
-        chip.title = slot.cents === null ? 'sin sonar' : `${Math.round(slot.cents)} ¢`;
+        chip.textContent = short;
+        chip.title =
+          slot.cents === null
+            ? `${slot.expectedLabel} · sin sonar`
+            : `${slot.expectedLabel} · ${Math.round(slot.cents)} ¢`;
         return chip;
       }),
     );
+  }
+
+  private renderGuide(): void {
+    this.els.guide.replaceChildren(
+      ...[
+        el('div', 'technique-guide-title', 'Cómo empezar'),
+        ...TECHNIQUE_START_GUIDE.map((step) => {
+          const item = el('div', 'guide-step');
+          item.appendChild(el('span', 'guide-icon', step.icon));
+          const text = el('div', 'guide-text');
+          text.appendChild(el('span', 'guide-title', step.titleEs));
+          text.appendChild(el('span', 'guide-detail', step.detailEs));
+          item.appendChild(text);
+          return item;
+        }),
+      ],
+    );
+  }
+
+  /** Toggle the "test the microphone" mode (hear any note, no evaluation). */
+  private async toggleListen(): Promise<void> {
+    if (this.listening) {
+      this.stopListen();
+      return;
+    }
+    this.listening = true;
+    this.els.listen.textContent = '⏹ Parar prueba';
+    this.els.result.hidden = true;
+    this.setHint('Toca cualquier cuerda: te diré la nota que oigo.');
+    if (!this.mic || !this.micRunning) await this.startMic();
+    this.micRunning = this.mic?.status === 'running';
+    if (!this.micRunning) {
+      this.setHint('No pude encender el micrófono: revisa el permiso del navegador.');
+    }
+  }
+
+  private stopListen(): void {
+    if (!this.listening) return;
+    this.listening = false;
+    this.els.listen.textContent = '🎤 Probar micrófono';
+    this.els.detected.textContent = '';
+    this.els.detected.dataset.state = 'idle';
+    this.setHint('');
   }
 
   private clearCountdownTimers(): void {

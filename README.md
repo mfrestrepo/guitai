@@ -3,7 +3,7 @@
 [![CI](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml/badge.svg)](https://github.com/mfrestrepo/guitai/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tests](https://img.shields.io/badge/tests-305%20passing-34D399)](#testing)
+[![Tests](https://img.shields.io/badge/tests-323%20passing-34D399)](#testing)
 [![Web Audio](https://img.shields.io/badge/built%20on-Web%20Audio%20API-F472B6)](#architecture)
 
 **GuitAI — AI-assisted guitar practice companion.** (interfaz en español)
@@ -149,9 +149,13 @@ The first slice of the practice module derived from the technique research
 - **Escalas** de una octava (Do mayor, Sol mayor, La menor) en primera posición.
 
 Each exercise **explains itself visually** (goal, 2–3 steps, right-hand
-alternation diagram, left-hand finger numbers, "one note per click") and the
-runner gives **preparation time**: the microphone opens first and a 4-beat
-count-in precedes the grid, which is aligned to the metronome's audio clock.
+alternation diagram, left-hand finger numbers, "one note per click"), a 4-step
+**"cómo empezar"** guide shows how to begin, and the instructions speak like a
+teacher: *"Dedo 1 (índice) · traste 1 · cuerda 6ª"*, with the note name as
+secondary info. A **🎤 Probar micrófono** mode shows what the app hears before
+starting. The runner gives **preparation time**: the microphone opens first and
+a 4-beat count-in precedes the grid, which is aligned to the metronome's audio
+clock; analysis uses the tuner's 4096-sample window for reliable detection.
 While playing, a **microphone level meter** and the last detected note
 (`oí B3 +12 ¢`) show what the app is hearing, with hints when it cannot tell;
 all jargon (BPM, pase, cents, estabilidad…) is defined in a glossary. With 🎤 on, every note is
@@ -284,7 +288,7 @@ picker pick it up automatically:
 ## Testing
 
 Core logic is kept free of the microphone and DOM so it is testable directly.
-**305 tests in 39 files** — `npm test`:
+**323 tests in 41 files** — `npm test`:
 
 | Area | Covers |
 | --------------------------- | ------------------------------------------------------------- |

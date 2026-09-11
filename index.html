@@ -324,6 +324,8 @@
             </div>
           </section>
 
+          <section class="card technique-guide" id="technique-guide"></section>
+
           <div class="card runner-card">
             <div class="technique-stage">
               <div class="technique-fretboard-wrap">
@@ -332,7 +334,8 @@
               </div>
               <div class="technique-readout">
                 <div class="technique-expected-label">toca ahora</div>
-                <div id="technique-current-note" class="technique-current-note">&mdash;</div>
+                <div id="technique-current-note" class="technique-position">&mdash;</div>
+                <div id="technique-note-chip" class="technique-note-chip"></div>
                 <div class="technique-next">después <span id="technique-next-note">—</span></div>
                 <div id="technique-detected" class="technique-detected"></div>
                 <div id="technique-hint" class="technique-hint"></div>
@@ -367,7 +370,10 @@
             <div class="runner-controls">
               <button id="technique-start" class="btn btn-primary btn-big" type="button">▶ Empezar</button>
               <button id="technique-stop" class="btn btn-secondary btn-big" type="button" hidden>■ Parar</button>
+              <button id="technique-listen" class="btn btn-ghost btn-big" type="button" title="Comprueba que el micrófono te oye: toca cualquier cuerda">🎤 Probar micrófono</button>
             </div>
+
+            <p class="technique-legend" id="technique-legend"></p>
 
             <div class="runner-metronome">
               <button id="technique-metronome-toggle" class="icon-btn" type="button" title="Metrónomo (clic de tempo)" aria-pressed="true">⏱</button>
